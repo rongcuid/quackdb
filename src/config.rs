@@ -123,7 +123,7 @@ impl Config {
         };
         if state != ffi::DuckDBSuccess {
             return Err(ConfigError::ConfigSetError(
-                ffi::Error::new(state),
+                state,
                 key.to_owned(),
                 value.to_owned(),
             ));
@@ -142,8 +142,8 @@ impl Drop for Config {
 
 #[derive(thiserror::Error, Debug)]
 pub enum ConfigError {
-    #[error("duckdb_set_config() returns {0:?}: set {1}:{2} error")]
-    ConfigSetError(ffi::Error, String, String),
+    #[error("duckdb_set_config() returns {0}: set {1}:{2} error")]
+    ConfigSetError(ffi::duckdb_state, String, String),
 }
 
 type Result<T, E = ConfigError> = std::result::Result<T, E>;

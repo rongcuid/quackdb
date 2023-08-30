@@ -5,11 +5,11 @@ use std::{
     ptr,
 };
 
-pub fn option_path_to_ptr(path: Option<impl AsRef<Path>>) -> Result<*const i8, NulError> {
+pub fn option_path_to_ptr(path: Option<&Path>) -> Result<*const i8, NulError> {
     Ok(option_path_to_cstring(path)?.map_or(ptr::null(), |cstr| cstr.into_raw()))
 }
 
-pub fn option_path_to_cstring(path: Option<impl AsRef<Path>>) -> Result<Option<CString>, NulError> {
+pub fn option_path_to_cstring(path: Option<&Path>) -> Result<Option<CString>, NulError> {
     path.map(|p| path_to_cstring(p.as_ref())).transpose()
 }
 
