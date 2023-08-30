@@ -1,10 +1,10 @@
-use std::{ptr, sync::Arc};
+use std::{
+    ffi::{CStr, CString},
+    ptr,
+    sync::Arc,
+};
 
-use thiserror::Error;
-
-use crate::{database::Database, ffi};
-
-type Result<T, E = ConnectionError> = std::result::Result<T, E>;
+use crate::{database::Database, error::*, ffi};
 
 pub struct Connection {
     pub(crate) handle: ffi::duckdb_connection,
@@ -17,7 +17,7 @@ impl Connection {
         unsafe {
             let r = ffi::duckdb_connect(database.handle, &mut handle);
             if r != ffi::DuckDBSuccess {
-                return Err(ConnectionError::ConnectError);
+                return Err(Error::ConnectError);
             }
         }
         Ok(Arc::new(Connection {
@@ -33,6 +33,11 @@ impl Connection {
     pub fn query_progress(self: &Arc<Self>) {
         unsafe { unimplemented!("Not in libduckdb-sys yet") }
     }
+
+    pub fn query(self: &Arc<Self>, sql: &str) -> Result<()> {
+        let cstr = CString::new(sql)?;
+        todo!()
+    }
 }
 
 impl Drop for Connection {
@@ -41,10 +46,4 @@ impl Drop for Connection {
             ffi::duckdb_disconnect(&mut self.handle);
         }
     }
-}
-
-#[derive(Error, Debug)]
-pub enum ConnectionError {
-    #[error("duckdb_connect() error")]
-    ConnectError,
 }

@@ -6,14 +6,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::{
-    config::{Config, ConfigError},
-    connection::{Connection, ConnectionError},
-    cutils::option_path_to_ptr,
-    ffi,
-};
-
-pub type Result<T, E = DatabaseError> = std::result::Result<T, E>;
+use crate::{config::Config, connection::Connection, cutils::option_path_to_ptr, error::*, ffi};
 
 #[derive(Debug)]
 pub struct Database {
@@ -22,12 +15,12 @@ pub struct Database {
 
 impl Database {
     /// Open a database. `Some(path)` opens a file, while `None` opens an in-memory db.
-    pub fn open(path: Option<&Path>) -> Result<Arc<Database>, DatabaseError> {
+    pub fn open(path: Option<&Path>) -> Result<Arc<Database>, Error> {
         Self::open_ext(path, &Config::default())
     }
 
     /// Extended open
-    pub fn open_ext(path: Option<&Path>, config: &Config) -> Result<Arc<Database>, DatabaseError> {
+    pub fn open_ext(path: Option<&Path>, config: &Config) -> Result<Arc<Database>, Error> {
         let p_path = option_path_to_ptr(path)?;
         let mut db: ffi::duckdb_database = ptr::null_mut();
         unsafe {
@@ -36,7 +29,7 @@ impl Database {
             if r != ffi::DuckDBSuccess {
                 let err_cstr = CStr::from_ptr(err);
                 let err_str = err_cstr.to_str()?;
-                return Err(DatabaseError::OpenError(err_str.to_owned()));
+                return Err(Error::OpenError(err_str.to_owned()));
             }
             Self::open_from_raw(db)
         }
@@ -68,20 +61,6 @@ impl Drop for Database {
     }
 }
 
-#[derive(thiserror::Error, Debug)]
-pub enum DatabaseError {
-    #[error(transparent)]
-    ConfigError(#[from] ConfigError),
-    #[error("duckdb_open_ext() error: {0}")]
-    OpenError(String),
-    #[error(transparent)]
-    ConnectionError(#[from] ConnectionError),
-    #[error(transparent)]
-    NulError(#[from] NulError),
-    #[error(transparent)]
-    Utf8Error(#[from] Utf8Error),
-}
-
 /// Some tests are adapted from `duckdb-rs`
 #[cfg(test)]
 mod test {
@@ -103,7 +82,7 @@ mod test {
             &Config::default().access_mode(AccessMode::ReadOnly)?,
         );
         assert!(result.is_err());
-        assert!(matches!(result, Err(DatabaseError::OpenError(_))));
+        assert!(matches!(result, Err(Error::OpenError(_))));
         Ok(())
     }
 }

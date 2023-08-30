@@ -5,7 +5,7 @@ use std::{
 
 use strum::{Display, EnumString};
 
-use crate::ffi;
+use crate::{error::*, ffi};
 
 /// duckdb access mode, default is Automatic
 #[derive(Debug, Eq, PartialEq, EnumString, Display)]
@@ -123,7 +123,7 @@ impl Config {
             )
         };
         if state != ffi::DuckDBSuccess {
-            return Err(ConfigError::ConfigSetError(
+            return Err(Error::ConfigSetError(
                 state,
                 key.to_owned(),
                 value.to_owned(),
@@ -140,11 +140,3 @@ impl Drop for Config {
         }
     }
 }
-
-#[derive(thiserror::Error, Debug)]
-pub enum ConfigError {
-    #[error("duckdb_set_config() returns {0}: set {1}:{2} error")]
-    ConfigSetError(ffi::duckdb_state, String, String),
-}
-
-type Result<T, E = ConfigError> = std::result::Result<T, E>;
