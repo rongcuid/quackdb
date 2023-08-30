@@ -1,5 +1,5 @@
 use std::{
-    ffi::{c_char, CString, NulError},
+    ffi::{c_char, CStr, NulError},
     path::Path,
     ptr,
     str::Utf8Error,
@@ -8,6 +8,7 @@ use std::{
 
 use crate::{
     config::{Config, ConfigError},
+    connection::{Connection, ConnectionError},
     cutils::option_path_to_ptr,
     ffi,
 };
@@ -16,7 +17,7 @@ pub type Result<T, E = DatabaseError> = std::result::Result<T, E>;
 
 #[derive(Debug)]
 pub struct Database {
-    raw: ffi::duckdb_database,
+    pub(crate) handle: ffi::duckdb_database,
 }
 
 impl Database {
@@ -33,7 +34,7 @@ impl Database {
             let mut err: *mut c_char = ptr::null_mut();
             let r = ffi::duckdb_open_ext(p_path, &mut db, config.duckdb_config(), &mut err);
             if r != ffi::DuckDBSuccess {
-                let err_cstr = CString::from_raw(err);
+                let err_cstr = CStr::from_ptr(err);
                 let err_str = err_cstr.to_str()?;
                 return Err(DatabaseError::OpenError(err_str.to_owned()));
             }
@@ -43,14 +44,26 @@ impl Database {
 
     #[inline]
     pub unsafe fn open_from_raw(raw: ffi::duckdb_database) -> Result<Arc<Database>> {
-        Ok(Arc::new(Self { raw }))
+        Ok(Arc::new(Self { handle: raw }))
+    }
+
+    pub fn connect(self: &Arc<Self>) -> Result<Arc<Connection>> {
+        Ok(Connection::connect(self.clone())?)
+    }
+
+    pub fn library_version() -> Result<String> {
+        let mut p: *const c_char = ptr::null();
+        unsafe {
+            p = ffi::duckdb_library_version();
+            Ok(CStr::from_ptr(p).to_str()?.to_owned())
+        }
     }
 }
 
 impl Drop for Database {
     fn drop(&mut self) {
         unsafe {
-            ffi::duckdb_close(&mut self.raw);
+            ffi::duckdb_close(&mut self.handle);
         }
     }
 }
@@ -59,8 +72,10 @@ impl Drop for Database {
 pub enum DatabaseError {
     #[error(transparent)]
     ConfigError(#[from] ConfigError),
-    #[error("duckdb_open_ext() fails: {0}")]
+    #[error("duckdb_open_ext() error: {0}")]
     OpenError(String),
+    #[error(transparent)]
+    ConnectionError(#[from] ConnectionError),
     #[error(transparent)]
     NulError(#[from] NulError),
     #[error(transparent)]

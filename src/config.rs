@@ -46,6 +46,7 @@ pub enum DefaultNullOrder {
 /// duckdb configuration
 /// Refer to https://github.com/duckdb/duckdb/blob/master/src/main/config.cpp
 /// Adapted from `duckdb-rs` crate
+/// TODO: support everything in the API
 #[derive(Default)]
 pub struct Config {
     pub(crate) config: Option<ffi::duckdb_config>,
