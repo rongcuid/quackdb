@@ -6,21 +6,36 @@ use std::{
     sync::Arc,
 };
 
-use crate::{config::Config, connection::Connection, cutils::option_path_to_ptr, error::*, ffi};
+use crate::{
+    config::Config,
+    connection::{Connection, ConnectionError},
+    cutils::option_path_to_ptr,
+    error::*,
+    ffi,
+};
 
 #[derive(Debug)]
 pub struct Database {
     pub(crate) handle: ffi::duckdb_database,
 }
 
+#[derive(thiserror::Error, Debug)]
+pub enum DatabaseError {
+    #[error("duckdb_open_ext() error: {0}")]
+    OpenError(String),
+}
+
 impl Database {
     /// Open a database. `Some(path)` opens a file, while `None` opens an in-memory db.
-    pub fn open(path: Option<&Path>) -> Result<Arc<Database>, Error> {
+    pub fn open(path: Option<&Path>) -> DbResult<Arc<Self>, DatabaseError> {
         Self::open_ext(path, &Config::default())
     }
 
     /// Extended open
-    pub fn open_ext(path: Option<&Path>, config: &Config) -> Result<Arc<Database>, Error> {
+    pub fn open_ext(
+        path: Option<&Path>,
+        config: &Config,
+    ) -> DbResult<Arc<Database>, DatabaseError> {
         let p_path = option_path_to_ptr(path)?;
         let mut db: ffi::duckdb_database = ptr::null_mut();
         unsafe {
@@ -29,26 +44,26 @@ impl Database {
             if r != ffi::DuckDBSuccess {
                 let err_cstr = CStr::from_ptr(err);
                 let err_str = err_cstr.to_str()?;
-                return Err(Error::OpenError(err_str.to_owned()));
+                return Ok(Err(DatabaseError::OpenError(err_str.to_owned())));
             }
             Self::open_from_raw(db)
         }
     }
 
     #[inline]
-    pub unsafe fn open_from_raw(raw: ffi::duckdb_database) -> Result<Arc<Database>> {
-        Ok(Arc::new(Self { handle: raw }))
+    pub unsafe fn open_from_raw(raw: ffi::duckdb_database) -> DbResult<Arc<Self>, DatabaseError> {
+        Ok(Ok(Arc::new(Self { handle: raw })))
     }
 
-    pub fn connect(self: &Arc<Self>) -> Result<Arc<Connection>> {
+    pub fn connect(self: &Arc<Self>) -> DbResult<Arc<Connection>, ConnectionError> {
         Ok(Connection::connect(self.clone())?)
     }
 
-    pub fn library_version() -> Result<String> {
+    pub fn library_version() -> DbResult<String, DatabaseError> {
         let mut p: *const c_char = ptr::null();
         unsafe {
             p = ffi::duckdb_library_version();
-            Ok(CStr::from_ptr(p).to_str()?.to_owned())
+            Ok(Ok(CStr::from_ptr(p).to_str()?.to_owned()))
         }
     }
 }
@@ -74,15 +89,16 @@ mod test {
     }
 
     #[test]
-    fn test_open_failure() -> Result<()> {
+    fn test_open_failure() -> DbResult<(), DatabaseError> {
         let filename = "no_such_file.db";
         let result = Database::open_ext(
             // Some(Path::new(filename)).as_deref(),
             Some(filename.as_ref()),
-            &Config::default().access_mode(AccessMode::ReadOnly)?,
+            &Config::default()
+                .access_mode(AccessMode::ReadOnly)?
+                .unwrap(),
         );
-        assert!(result.is_err());
-        assert!(matches!(result, Err(Error::OpenError(_))));
-        Ok(())
+        assert!(matches!(result, Ok(Err(DatabaseError::OpenError(_)))));
+        Ok(Ok(()))
     }
 }

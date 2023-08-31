@@ -52,6 +52,12 @@ pub struct Config {
     pub(crate) config: Option<ffi::duckdb_config>,
 }
 
+#[derive(thiserror::Error, Debug)]
+pub enum ConfigError {
+    #[error("duckdb_set_config() returns {0}: set {1}:{2} error")]
+    ConfigSetError(ffi::duckdb_state, String, String),
+}
+
 impl Config {
     pub(crate) fn duckdb_config(&self) -> ffi::duckdb_config {
         self.config
@@ -59,54 +65,55 @@ impl Config {
     }
 
     /// Access mode of the database ([AUTOMATIC], READ_ONLY or READ_WRITE)
-    pub fn access_mode(mut self, mode: AccessMode) -> Result<Config> {
-        self.set("access_mode", &mode.to_string())?;
-        Ok(self)
+    pub fn access_mode(mut self, mode: AccessMode) -> DbResult<Config, ConfigError> {
+        Ok(self.set("access_mode", &mode.to_string())?.and(Ok(self)))
     }
 
     /// The order type used when none is specified ([ASC] or DESC)
-    pub fn default_order(mut self, order: DefaultOrder) -> Result<Config> {
-        self.set("default_order", &order.to_string())?;
-        Ok(self)
+    pub fn default_order(mut self, order: DefaultOrder) -> DbResult<Config, ConfigError> {
+        Ok(self.set("default_order", &order.to_string())?.and(Ok(self)))
     }
 
     /// Null ordering used when none is specified ([NULLS_FIRST] or NULLS_LAST)
-    pub fn default_null_order(mut self, null_order: DefaultNullOrder) -> Result<Config> {
-        self.set("default_null_order", &null_order.to_string())?;
-        Ok(self)
+    pub fn default_null_order(
+        mut self,
+        null_order: DefaultNullOrder,
+    ) -> DbResult<Config, ConfigError> {
+        Ok(self
+            .set("default_null_order", &null_order.to_string())?
+            .and(Ok(self)))
     }
 
     /// Allow the database to access external state (through e.g. COPY TO/FROM, CSV readers, pandas replacement scans, etc)
-    pub fn enable_external_access(mut self, enabled: bool) -> Result<Config> {
-        self.set("enable_external_access", &enabled.to_string())?;
-        Ok(self)
+    pub fn enable_external_access(mut self, enabled: bool) -> DbResult<Config, ConfigError> {
+        Ok(self
+            .set("enable_external_access", &enabled.to_string())?
+            .and(Ok(self)))
     }
 
     /// Whether or not object cache is used to cache e.g. Parquet metadata
-    pub fn enable_object_cache(mut self, enabled: bool) -> Result<Config> {
-        self.set("enable_object_cache", &enabled.to_string())?;
-        Ok(self)
+    pub fn enable_object_cache(mut self, enabled: bool) -> DbResult<Config, ConfigError> {
+        Ok(self
+            .set("enable_object_cache", &enabled.to_string())?
+            .and(Ok(self)))
     }
 
     /// Allow to load third-party duckdb extensions.
-    pub fn allow_unsigned_extensions(mut self) -> Result<Config> {
-        self.set("allow_unsigned_extensions", "true")?;
-        Ok(self)
+    pub fn allow_unsigned_extensions(mut self) -> DbResult<Config, ConfigError> {
+        Ok(self.set("allow_unsigned_extensions", "true")?.and(Ok(self)))
     }
 
     /// The maximum memory of the system (e.g. 1GB)
-    pub fn max_memory(mut self, memory: &str) -> Result<Config> {
-        self.set("max_memory", memory)?;
-        Ok(self)
+    pub fn max_memory(mut self, memory: &str) -> DbResult<Config, ConfigError> {
+        Ok(self.set("max_memory", memory)?.and(Ok(self)))
     }
 
     /// The number of total threads used by the system
-    pub fn threads(mut self, thread_num: i64) -> Result<Config> {
-        self.set("threads", &thread_num.to_string())?;
-        Ok(self)
+    pub fn threads(mut self, thread_num: i64) -> DbResult<Config, ConfigError> {
+        Ok(self.set("threads", &thread_num.to_string())?.and(Ok(self)))
     }
 
-    fn set(&mut self, key: &str, value: &str) -> Result<()> {
+    fn set(&mut self, key: &str, value: &str) -> DbResult<(), ConfigError> {
         if self.config.is_none() {
             let mut config: ffi::duckdb_config = ptr::null_mut();
             let state = unsafe { ffi::duckdb_create_config(&mut config) };
@@ -123,13 +130,13 @@ impl Config {
             )
         };
         if state != ffi::DuckDBSuccess {
-            return Err(Error::ConfigSetError(
+            return Ok(Err(ConfigError::ConfigSetError(
                 state,
                 key.to_owned(),
                 value.to_owned(),
-            ));
+            )));
         }
-        Ok(())
+        Ok(Ok(()))
     }
 }
 
