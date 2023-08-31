@@ -1,10 +1,16 @@
 use std::{
     ffi::{CStr, CString},
+    mem::MaybeUninit,
     ptr,
     sync::Arc,
 };
 
-use crate::{database::Database, error::*, ffi};
+use crate::{
+    database::Database,
+    error::*,
+    ffi,
+    query::{QueryParent, QueryResult},
+};
 
 pub struct Connection {
     pub(crate) handle: ffi::duckdb_connection,
@@ -34,9 +40,20 @@ impl Connection {
         unsafe { unimplemented!("Not in libduckdb-sys yet") }
     }
 
-    pub fn query(self: &Arc<Self>, sql: &str) -> Result<()> {
+    pub fn query(self: &Arc<Self>, sql: &str) -> Result<Arc<QueryResult>> {
         let cstr = CString::new(sql)?;
-        todo!()
+        let p = cstr.as_ptr();
+        unsafe {
+            let mut result: ffi::duckdb_result = std::mem::zeroed();
+            let r = ffi::duckdb_query(self.handle, p, &mut result);
+            // Create the result type to let Rust manage the memory
+            let result = QueryResult::from_raw_connection(result, self.clone());
+            // Then check if there was an error
+            if r != ffi::DuckDBSuccess {
+                return Err(Error::QueryError);
+            }
+            Ok(result)
+        }
     }
 }
 

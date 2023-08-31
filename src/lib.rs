@@ -5,3 +5,5 @@ mod connection;
 mod database;
 mod error;
 mod ffi;
+mod query;
+mod types;
