@@ -69,6 +69,26 @@ impl QueryResult {
             ) as usize
         }
     }
+    pub fn row_count(self: &Arc<Self>) -> usize {
+        unsafe {
+            ffi::duckdb_row_count(
+                self.handle
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .deref_mut(),
+            ) as usize
+        }
+    }
+    pub fn rows_changed(self: &Arc<Self>) -> usize {
+        unsafe {
+            ffi::duckdb_rows_changed(
+                self.handle
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .deref_mut(),
+            ) as usize
+        }
+    }
 }
 
 impl Drop for QueryResult {

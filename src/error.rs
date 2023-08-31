@@ -10,8 +10,8 @@ pub enum Error {
     OpenError(String),
     #[error("duckdb_connect() error")]
     ConnectError,
-    #[error("duckdb_query() error")]
-    QueryError,
+    #[error("duckdb_query() error: {0}")]
+    QueryError(String),
     #[error(transparent)]
     NulError(#[from] NulError),
     #[error(transparent)]

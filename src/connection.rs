@@ -46,12 +46,15 @@ impl Connection {
         unsafe {
             let mut result: ffi::duckdb_result = std::mem::zeroed();
             let r = ffi::duckdb_query(self.handle, p, &mut result);
-            // Create the result type to let Rust manage the memory
-            let result = QueryResult::from_raw_connection(result, self.clone());
-            // Then check if there was an error
             if r != ffi::DuckDBSuccess {
-                return Err(Error::QueryError);
+                let err = ffi::duckdb_result_error(&mut result);
+                let err = Err(Error::QueryError(
+                    CStr::from_ptr(err).to_string_lossy().to_string(),
+                ));
+                ffi::duckdb_destroy_result(&mut result);
+                return err;
             }
+            let result = QueryResult::from_raw_connection(result, self.clone());
             Ok(result)
         }
     }
