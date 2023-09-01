@@ -14,13 +14,10 @@ use crate::{
     ffi,
 };
 
-#[derive(Debug, Clone)]
-pub struct Database {
-    pub(crate) handle: Arc<DatabaseHandle>,
-}
-
 #[derive(Debug)]
-pub(crate) struct DatabaseHandle(pub(crate) ffi::duckdb_database);
+pub struct Database {
+    pub(crate) handle: ffi::duckdb_database,
+}
 
 #[derive(thiserror::Error, Debug)]
 pub enum DatabaseError {
@@ -30,12 +27,15 @@ pub enum DatabaseError {
 
 impl Database {
     /// Open a database. `Some(path)` opens a file, while `None` opens an in-memory db.
-    pub fn open(path: Option<&Path>) -> DbResult<Self, DatabaseError> {
+    pub fn open(path: Option<&Path>) -> DbResult<Arc<Self>, DatabaseError> {
         Self::open_ext(path, &Config::default())
     }
 
     /// Extended open
-    pub fn open_ext(path: Option<&Path>, config: &Config) -> DbResult<Self, DatabaseError> {
+    pub fn open_ext(
+        path: Option<&Path>,
+        config: &Config,
+    ) -> DbResult<Arc<Database>, DatabaseError> {
         let p_path = option_path_to_ptr(path)?;
         let mut db: ffi::duckdb_database = ptr::null_mut();
         unsafe {
@@ -51,14 +51,12 @@ impl Database {
     }
 
     #[inline]
-    pub unsafe fn open_from_raw(raw: ffi::duckdb_database) -> DbResult<Self, DatabaseError> {
-        Ok(Ok(Self {
-            handle: Arc::new(DatabaseHandle(raw)),
-        }))
+    pub unsafe fn open_from_raw(raw: ffi::duckdb_database) -> DbResult<Arc<Self>, DatabaseError> {
+        Ok(Ok(Arc::new(Self { handle: raw })))
     }
 
-    pub fn connect(&self) -> DbResult<Connection, ConnectionError> {
-        Ok(Connection::connect(&self)?)
+    pub fn connect(self: &Arc<Self>) -> DbResult<Arc<Connection>, ConnectionError> {
+        Ok(Connection::connect(self.clone())?)
     }
 
     pub fn library_version() -> DbResult<String, DatabaseError> {
@@ -70,10 +68,10 @@ impl Database {
     }
 }
 
-impl Drop for DatabaseHandle {
+impl Drop for Database {
     fn drop(&mut self) {
         unsafe {
-            ffi::duckdb_close(&mut self.0);
+            ffi::duckdb_close(&mut self.handle);
         }
     }
 }
