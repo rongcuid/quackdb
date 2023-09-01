@@ -31,7 +31,7 @@ impl QueryResult {
         })
     }
 
-    pub fn column_name(self: &Arc<Self>, col: usize) -> Option<String> {
+    pub fn column_name(&self, col: usize) -> Option<String> {
         unsafe {
             let mut p: *const c_char = ffi::duckdb_column_name(
                 self.handle
@@ -46,7 +46,7 @@ impl QueryResult {
         }
     }
 
-    pub fn column_type(self: &Arc<Self>, col: usize) -> Option<DuckType> {
+    pub fn column_type(&self, col: usize) -> Option<DuckType> {
         unsafe {
             let t = ffi::duckdb_column_type(
                 self.handle
@@ -59,7 +59,7 @@ impl QueryResult {
         }
     }
 
-    pub fn column_count(self: &Arc<Self>) -> usize {
+    pub fn column_count(&self) -> usize {
         unsafe {
             ffi::duckdb_column_count(
                 self.handle
@@ -69,7 +69,7 @@ impl QueryResult {
             ) as usize
         }
     }
-    pub fn row_count(self: &Arc<Self>) -> usize {
+    pub fn row_count(&self) -> usize {
         unsafe {
             ffi::duckdb_row_count(
                 self.handle
@@ -79,7 +79,7 @@ impl QueryResult {
             ) as usize
         }
     }
-    pub fn rows_changed(self: &Arc<Self>) -> usize {
+    pub fn rows_changed(&self) -> usize {
         unsafe {
             ffi::duckdb_rows_changed(
                 self.handle

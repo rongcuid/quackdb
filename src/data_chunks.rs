@@ -16,7 +16,7 @@ impl DataChunk {
     pub fn new(ty: DuckType, column_count: usize) -> Self {
         unimplemented!()
     }
-    pub fn reset(self: &Arc<Self>) {}
+    pub fn reset(&self) {}
 }
 
 impl Drop for DataChunkHandle {

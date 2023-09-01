@@ -34,11 +34,11 @@ impl Connection {
         })))
     }
 
-    pub fn interrupt(self: &Arc<Self>) {
+    pub fn interrupt(&self) {
         unsafe { unimplemented!("Not in libduckdb-sys yet") }
     }
 
-    pub fn query_progress(self: &Arc<Self>) {
+    pub fn query_progress(&self) {
         unsafe { unimplemented!("Not in libduckdb-sys yet") }
     }
 
