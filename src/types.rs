@@ -1,7 +1,7 @@
 use crate::ffi;
 
 #[derive(Debug, Clone, Copy)]
-pub enum Type {
+pub enum DuckType {
     Boolean,
     TinyInt,
     SmallInt,
@@ -35,9 +35,9 @@ pub enum Type {
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct RawType(pub ffi::duckdb_type);
 
-impl From<RawType> for Option<Type> {
+impl From<RawType> for Option<DuckType> {
     fn from(value: RawType) -> Self {
-        use Type::*;
+        use DuckType::*;
         match value.0 {
             ffi::DUCKDB_TYPE_DUCKDB_TYPE_INVALID => None,
             ffi::DUCKDB_TYPE_DUCKDB_TYPE_BOOLEAN => Some(Boolean),

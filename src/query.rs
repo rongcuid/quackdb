@@ -8,7 +8,7 @@ use std::{
 use crate::{
     connection::Connection,
     ffi,
-    types::{RawType, Type},
+    types::{DuckType, RawType},
 };
 
 pub struct QueryResult {
@@ -46,7 +46,7 @@ impl QueryResult {
         }
     }
 
-    pub fn column_type(self: &Arc<Self>, col: usize) -> Option<Type> {
+    pub fn column_type(self: &Arc<Self>, col: usize) -> Option<DuckType> {
         unsafe {
             let t = ffi::duckdb_column_type(
                 self.handle
