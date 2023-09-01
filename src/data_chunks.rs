@@ -9,7 +9,6 @@ pub struct DataChunk {
     handle: Arc<Mutex<DataChunkHandle>>,
 }
 
-#[derive(Clone)]
 struct DataChunkHandle(ffi::duckdb_data_chunk);
 
 impl DataChunk {

@@ -11,33 +11,32 @@ use crate::{
     types::{DuckType, RawType},
 };
 
+#[derive(Debug)]
 pub struct QueryResult {
-    pub(crate) handle: Mutex<ffi::duckdb_result>,
+    pub(crate) handle: Mutex<QueryResultHandle>,
     pub(crate) _parent: QueryParent,
 }
 
+#[derive(Debug)]
+pub(crate) struct QueryResultHandle(pub(crate) ffi::duckdb_result);
+
+#[derive(Debug, Clone)]
 pub(crate) enum QueryParent {
-    Connection(Arc<Connection>),
+    Connection(Connection),
 }
 
 impl QueryResult {
-    pub(crate) fn from_raw_connection(
-        handle: ffi::duckdb_result,
-        connection: Arc<Connection>,
-    ) -> Arc<Self> {
-        Arc::new(Self {
-            handle: Mutex::new(handle),
+    pub(crate) fn from_raw_connection(handle: ffi::duckdb_result, connection: Connection) -> Self {
+        Self {
+            handle: Mutex::new(QueryResultHandle(handle)),
             _parent: QueryParent::Connection(connection),
-        })
+        }
     }
 
-    pub fn column_name(self: &Arc<Self>, col: usize) -> Option<String> {
+    pub fn column_name(&self, col: usize) -> Option<String> {
         unsafe {
             let mut p: *const c_char = ffi::duckdb_column_name(
-                self.handle
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .deref_mut(),
+                &mut self.handle.lock().unwrap_or_else(PoisonError::into_inner).0,
                 col as u64,
             );
             let nn = NonNull::new(p as *mut c_char)?;
@@ -46,60 +45,42 @@ impl QueryResult {
         }
     }
 
-    pub fn column_type(self: &Arc<Self>, col: usize) -> Option<DuckType> {
+    pub fn column_type(&self, col: usize) -> Option<DuckType> {
         unsafe {
             let t = ffi::duckdb_column_type(
-                self.handle
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .deref_mut(),
+                &mut self.handle.lock().unwrap_or_else(PoisonError::into_inner).0,
                 col as u64,
             );
             RawType(t).into()
         }
     }
 
-    pub fn column_count(self: &Arc<Self>) -> usize {
+    pub fn column_count(&self) -> usize {
         unsafe {
             ffi::duckdb_column_count(
-                self.handle
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .deref_mut(),
+                &mut self.handle.lock().unwrap_or_else(PoisonError::into_inner).0,
             ) as usize
         }
     }
     pub fn row_count(self: &Arc<Self>) -> usize {
         unsafe {
-            ffi::duckdb_row_count(
-                self.handle
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .deref_mut(),
-            ) as usize
+            ffi::duckdb_row_count(&mut self.handle.lock().unwrap_or_else(PoisonError::into_inner).0)
+                as usize
         }
     }
     pub fn rows_changed(self: &Arc<Self>) -> usize {
         unsafe {
             ffi::duckdb_rows_changed(
-                self.handle
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .deref_mut(),
+                &mut self.handle.lock().unwrap_or_else(PoisonError::into_inner).0,
             ) as usize
         }
     }
 }
 
-impl Drop for QueryResult {
+impl Drop for QueryResultHandle {
     fn drop(&mut self) {
         unsafe {
-            ffi::duckdb_destroy_result(
-                self.handle
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .deref_mut(),
-            );
+            ffi::duckdb_destroy_result(&mut self.0);
         }
     }
 }
