@@ -1,4 +1,7 @@
-use std::{collections::BTreeMap, ffi::CStr};
+use std::{
+    collections::BTreeMap,
+    ffi::{c_void, CStr},
+};
 
 use crate::{ffi, types::RawType};
 
@@ -14,6 +17,10 @@ pub enum LogicalKind {
     Decimal {
         width: u8,
         scale: u8,
+    },
+    Enum {
+        internal: RawType,
+        dictionary: Vec<String>,
     },
     List {
         type_: Box<LogicalType>,
@@ -49,6 +56,21 @@ impl LogicalKind {
                 width: ffi::duckdb_decimal_width(handle),
                 scale: ffi::duckdb_decimal_scale(handle),
             },
+            RawType::Enum => {
+                let internal = RawType::from_raw(ffi::duckdb_enum_internal_type(handle))?;
+                let size = ffi::duckdb_enum_dictionary_size(handle);
+                let mut dictionary = Vec::new();
+                for i in 0..size {
+                    let p = ffi::duckdb_enum_dictionary_value(handle, i as u64);
+                    let name = CStr::from_ptr(p).to_string_lossy().to_string();
+                    ffi::duckdb_free(p as *mut c_void);
+                    dictionary.push(name);
+                }
+                Self::Enum {
+                    internal,
+                    dictionary,
+                }
+            }
             RawType::List => Self::List {
                 type_: Box::new(LogicalType::from_raw(ffi::duckdb_list_type_child_type(
                     handle,
@@ -66,8 +88,9 @@ impl LogicalKind {
                 let count = ffi::duckdb_struct_type_child_count(handle);
                 let mut children = BTreeMap::new();
                 for i in 0..count {
-                    let c = CStr::from_ptr(ffi::duckdb_struct_type_child_name(handle, i));
-                    let name = c.to_string_lossy().to_string();
+                    let p = ffi::duckdb_struct_type_child_name(handle, i);
+                    let name = CStr::from_ptr(p).to_string_lossy().to_string();
+                    ffi::duckdb_free(p as *mut c_void);
                     let type_ =
                         LogicalType::from_raw(ffi::duckdb_struct_type_child_type(handle, i))?;
                     children.insert(name, type_);
@@ -78,8 +101,9 @@ impl LogicalKind {
                 let count = ffi::duckdb_union_type_member_count(handle);
                 let mut members = BTreeMap::new();
                 for i in 0..count {
-                    let c = CStr::from_ptr(ffi::duckdb_union_type_member_name(handle, i));
-                    let name = c.to_string_lossy().to_string();
+                    let p = ffi::duckdb_union_type_member_name(handle, i);
+                    let name = CStr::from_ptr(p).to_string_lossy().to_string();
+                    ffi::duckdb_free(p as *mut c_void);
                     let type_ =
                         LogicalType::from_raw(ffi::duckdb_union_type_member_type(handle, i))?;
                     members.insert(name, type_);
