@@ -1,14 +1,18 @@
+use std::sync::Arc;
+
 use crate::{ffi, logical_type::LogicalType, types::RawType};
 
 pub struct Vector {
     handle: VectorHandle,
+    _parent: Option<Arc<Vector>>,
 }
 
 impl Vector {
-    pub unsafe fn from_raw(handle: ffi::duckdb_vector) -> Self {
-        Self {
+    pub unsafe fn from_raw(handle: ffi::duckdb_vector) -> Arc<Self> {
+        Arc::new(Self {
             handle: VectorHandle(handle),
-        }
+            _parent: None,
+        })
     }
     pub fn column_type(&self) -> Option<LogicalType> {
         unsafe { LogicalType::from_raw(ffi::duckdb_vector_get_column_type(self.handle.0)) }

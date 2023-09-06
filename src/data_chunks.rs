@@ -24,7 +24,7 @@ impl DataChunk {
     pub fn column_count(&self) -> usize {
         unsafe { ffi::duckdb_data_chunk_get_column_count(self.handle.lock().unwrap().0) as usize }
     }
-    pub fn vector(&self, col_idx: usize) -> Vector {
+    pub fn vector(&self, col_idx: usize) -> Arc<Vector> {
         unsafe {
             let v =
                 ffi::duckdb_data_chunk_get_vector(self.handle.lock().unwrap().0, col_idx as u64);
