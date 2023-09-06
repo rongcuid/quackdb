@@ -28,7 +28,7 @@ impl DataChunk {
         unsafe {
             let v =
                 ffi::duckdb_data_chunk_get_vector(self.handle.lock().unwrap().0, col_idx as u64);
-            Vector::from_raw(v)
+            Vector::from_raw(v, None)
         }
     }
     pub fn size(&self) -> usize {
