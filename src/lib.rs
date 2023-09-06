@@ -9,4 +9,5 @@ mod ffi;
 mod logical_type;
 mod query;
 mod types;
+mod value;
 mod vector;
