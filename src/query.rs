@@ -9,7 +9,7 @@ use crate::{
     connection::Connection,
     ffi,
     statement::PreparedStatement,
-    types::{LogicalType, RawType},
+    types::{LogicalType, TypeId},
 };
 
 pub struct QueryResult {
@@ -50,8 +50,8 @@ impl QueryResult {
         Some(cstr.to_string_lossy().to_string())
     }
 
-    pub unsafe fn column_type_unchecked(&self, col: u64) -> Option<RawType> {
-        RawType::from_raw(ffi::duckdb_column_type(
+    pub unsafe fn column_type_unchecked(&self, col: u64) -> Option<TypeId> {
+        TypeId::from_raw(ffi::duckdb_column_type(
             self.handle.lock().unwrap().deref_mut(),
             col,
         ))

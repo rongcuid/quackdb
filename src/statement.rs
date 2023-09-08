@@ -11,7 +11,7 @@ use crate::{
     error::{DbResult, Error},
     ffi,
     query::QueryResult,
-    types::RawType,
+    types::TypeId,
     value::Value,
 };
 
@@ -43,9 +43,9 @@ impl PreparedStatement {
     pub fn nparams(&self) -> u64 {
         unsafe { ffi::duckdb_nparams(*self.handle) }
     }
-    pub unsafe fn param_type_unchecked(&self, param_idx: u64) -> Option<RawType> {
+    pub unsafe fn param_type_unchecked(&self, param_idx: u64) -> Option<TypeId> {
         let ty = ffi::duckdb_param_type(*self.handle, param_idx);
-        RawType::from_raw(ty)
+        TypeId::from_raw(ty)
     }
     pub fn clear_bindings(&self) -> Result<(), PreparedStatementError> {
         unsafe {

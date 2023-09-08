@@ -1,6 +1,6 @@
 use std::{ffi::CString, ptr::NonNull, sync::Arc};
 
-use crate::{error::Error, ffi, types::LogicalType, types::RawType};
+use crate::{error::Error, ffi, types::LogicalType, types::TypeId};
 
 use super::Validity;
 

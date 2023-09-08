@@ -3,7 +3,7 @@ use std::{
     ffi::{c_void, CStr},
 };
 
-use crate::{ffi, types::RawType};
+use crate::{ffi, types::TypeId};
 
 pub struct LogicalType {
     pub(crate) handle: LogicalTypeHandle,
@@ -12,14 +12,14 @@ pub struct LogicalType {
 
 pub enum LogicalKind {
     Simple {
-        type_: RawType,
+        type_: TypeId,
     },
     Decimal {
         width: u8,
         scale: u8,
     },
     Enum {
-        internal: RawType,
+        internal: TypeId,
         dictionary: Vec<String>,
     },
     List {
@@ -46,18 +46,32 @@ impl LogicalType {
             kind: LogicalKind::from_raw(handle)?,
         })
     }
+    pub unsafe fn from_id(type_: TypeId) -> Self {
+        match type_ {
+            TypeId::Decimal => {
+                panic!("duckdb_create_logical_type() should not be used with DUCKDB_TYPE_DECIMAL")
+            }
+            id => Self::from_raw(ffi::duckdb_create_logical_type(id.to_raw()))
+                .expect("trying to create logical type from invalid type"),
+        }
+    }
+    pub fn type_id(&self) -> TypeId {
+        unsafe {
+            TypeId::from_raw(ffi::duckdb_get_type_id(self.handle.0)).expect("logical type invalid")
+        }
+    }
 }
 
 impl LogicalKind {
     pub unsafe fn from_raw(handle: ffi::duckdb_logical_type) -> Option<Self> {
-        let type_: RawType = RawType::from_raw(ffi::duckdb_get_type_id(handle))?;
+        let type_: TypeId = TypeId::from_raw(ffi::duckdb_get_type_id(handle))?;
         Some(match type_ {
-            RawType::Decimal => Self::Decimal {
+            TypeId::Decimal => Self::Decimal {
                 width: ffi::duckdb_decimal_width(handle),
                 scale: ffi::duckdb_decimal_scale(handle),
             },
-            RawType::Enum => {
-                let internal = RawType::from_raw(ffi::duckdb_enum_internal_type(handle))?;
+            TypeId::Enum => {
+                let internal = TypeId::from_raw(ffi::duckdb_enum_internal_type(handle))?;
                 let size = ffi::duckdb_enum_dictionary_size(handle);
                 let mut dictionary = Vec::new();
                 for i in 0..size {
@@ -71,12 +85,12 @@ impl LogicalKind {
                     dictionary,
                 }
             }
-            RawType::List => Self::List {
+            TypeId::List => Self::List {
                 type_: Box::new(LogicalType::from_raw(ffi::duckdb_list_type_child_type(
                     handle,
                 ))?),
             },
-            RawType::Map => Self::Map {
+            TypeId::Map => Self::Map {
                 key_type: Box::new(LogicalType::from_raw(ffi::duckdb_map_type_key_type(
                     handle,
                 ))?),
@@ -84,7 +98,7 @@ impl LogicalKind {
                     handle,
                 ))?),
             },
-            RawType::Struct => {
+            TypeId::Struct => {
                 let count = ffi::duckdb_struct_type_child_count(handle);
                 let mut children = BTreeMap::new();
                 for i in 0..count {
@@ -97,7 +111,7 @@ impl LogicalKind {
                 }
                 Self::Struct { children }
             }
-            RawType::Union => {
+            TypeId::Union => {
                 let count = ffi::duckdb_union_type_member_count(handle);
                 let mut members = BTreeMap::new();
                 for i in 0..count {

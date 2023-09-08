@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex, PoisonError},
 };
 
-use crate::{ffi, types::RawType, vector::Vector};
+use crate::{ffi, types::TypeId, vector::Vector};
 
 pub struct DataChunk {
     handle: Mutex<DataChunkHandle>,
@@ -13,7 +13,7 @@ pub struct DataChunk {
 struct DataChunkHandle(ffi::duckdb_data_chunk);
 
 impl DataChunk {
-    pub fn new(ty: RawType, column_count: u64) -> Arc<Self> {
+    pub fn new(ty: TypeId, column_count: u64) -> Arc<Self> {
         unimplemented!()
     }
     pub fn reset(&self) {
