@@ -6,8 +6,10 @@ use std::{
 };
 
 use crate::{
-    connection::Connection, ffi, logical_type::LogicalType, statement::PreparedStatement,
-    types::RawType,
+    connection::Connection,
+    ffi,
+    statement::PreparedStatement,
+    types::{LogicalType, RawType},
 };
 
 pub struct QueryResult {
