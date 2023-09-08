@@ -6,8 +6,11 @@ use std::{
 };
 
 use crate::{
-    connection::Connection, ffi, logical_type::LogicalType, statement::PreparedStatement,
-    types::RawType,
+    connection::Connection,
+    data_chunks::DataChunk,
+    ffi,
+    statement::PreparedStatement,
+    types::{LogicalType, TypeId},
 };
 
 pub struct QueryResult {
@@ -40,6 +43,11 @@ impl QueryResult {
         })
     }
 
+    pub unsafe fn chunk_unchecked(self: &Arc<Self>, chunk_index: u64) -> Arc<DataChunk> {
+        let c = ffi::duckdb_result_get_chunk(*self.handle.lock().unwrap(), chunk_index);
+        DataChunk::from_raw(c)
+    }
+
     pub unsafe fn column_name_unchecked(&self, col: u64) -> Option<String> {
         let p: *const c_char =
             ffi::duckdb_column_name(self.handle.lock().unwrap().deref_mut(), col);
@@ -48,8 +56,8 @@ impl QueryResult {
         Some(cstr.to_string_lossy().to_string())
     }
 
-    pub unsafe fn column_type_unchecked(&self, col: u64) -> Option<RawType> {
-        RawType::from_raw(ffi::duckdb_column_type(
+    pub unsafe fn column_type_unchecked(&self, col: u64) -> Option<TypeId> {
+        TypeId::from_raw(ffi::duckdb_column_type(
             self.handle.lock().unwrap().deref_mut(),
             col,
         ))
