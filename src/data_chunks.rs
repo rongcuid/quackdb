@@ -30,10 +30,10 @@ impl DataChunk {
     pub fn column_count(&self) -> u64 {
         unsafe { ffi::duckdb_data_chunk_get_column_count(*self.handle) }
     }
-    pub fn vector(&self, col_idx: u64) -> Arc<Vector> {
+    pub fn vector(&self, col_idx: u64) -> Vector {
         unsafe {
             let v = ffi::duckdb_data_chunk_get_vector(*self.handle, col_idx);
-            Vector::from_raw(v, None)
+            Vector::from_raw(v)
         }
     }
     pub fn size(&self) -> u64 {

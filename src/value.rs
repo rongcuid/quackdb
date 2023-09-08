@@ -1,5 +1,5 @@
 use std::{
-    ffi::{c_void, CStr, CString, NulError},
+    ffi::{c_char, c_void, CStr, CString, NulError},
     ops::Deref,
 };
 
@@ -14,29 +14,33 @@ pub struct Value {
 }
 
 #[derive(Debug)]
-pub(crate) struct ValueHandle(ffi::duckdb_value);
+pub struct ValueHandle(ffi::duckdb_value);
 
 impl Value {
-    pub fn from_varchar(text: &str) -> Result<Self, NulError> {
-        let cstr = CString::new(text)?;
-        unsafe { Ok(Self::from_raw(ffi::duckdb_create_varchar(cstr.as_ptr()))) }
+    pub fn from_handle(handle: ValueHandle) -> Self {
+        Self { handle }
     }
-    pub fn from_i64(val: i64) -> Self {
-        unsafe { Self::from_raw(ffi::duckdb_create_int64(val)) }
+    pub unsafe fn from_raw(raw: ffi::duckdb_value) -> Self {
+        Self::from_handle(ValueHandle(raw))
     }
-    pub unsafe fn from_raw(handle: ffi::duckdb_value) -> Self {
-        Self {
-            handle: ValueHandle(handle),
-        }
+}
+
+impl ValueHandle {
+    pub unsafe fn create_varchar(text: *const c_char) -> Self {
+        Self(ffi::duckdb_create_varchar(text))
     }
-    pub unsafe fn varchar_unchecked(&self) -> String {
-        let p = ffi::duckdb_get_varchar(*self.handle);
+    pub unsafe fn create_i64(val: i64) -> Self {
+        Self(ffi::duckdb_create_int64(val))
+    }
+
+    pub unsafe fn varchar(&self) -> String {
+        let p = ffi::duckdb_get_varchar(self.0);
         let text = CStr::from_ptr(p).to_string_lossy().to_string();
         ffi::duckdb_free(p as *mut c_void);
         text
     }
-    pub unsafe fn i64_unchecked(&self) -> i64 {
-        ffi::duckdb_get_int64(*self.handle)
+    pub unsafe fn i64(&self) -> i64 {
+        ffi::duckdb_get_int64(self.0)
     }
 }
 

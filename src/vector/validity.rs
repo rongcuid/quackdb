@@ -8,16 +8,19 @@ pub struct Validity {
 }
 
 impl Validity {
-    pub unsafe fn from_raw(handle: *mut u64) -> Self {
+    pub unsafe fn from_raw(raw: *mut u64) -> Self {
         Self {
-            handle: ValidityHandle(handle),
+            handle: ValidityHandle(raw),
         }
     }
     pub fn row_is_valid(&self, row: u64) -> bool {
         unsafe { ffi::duckdb_validity_row_is_valid(*self.handle, row) }
     }
-    pub unsafe fn set_row_validity_unchecked(&self, row: u64, valid: bool) {
-        ffi::duckdb_validity_set_row_validity(*self.handle, row, valid);
+}
+
+impl ValidityHandle {
+    pub unsafe fn set_row_validity(&self, row: u64, valid: bool) {
+        ffi::duckdb_validity_set_row_validity(self.0, row, valid);
     }
 }
 
