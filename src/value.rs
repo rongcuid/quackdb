@@ -1,14 +1,19 @@
-use std::ffi::{c_void, CStr, CString, NulError};
+use std::{
+    ffi::{c_void, CStr, CString, NulError},
+    ops::Deref,
+};
 
 use crate::{
     error::{DbResult, Error},
     ffi,
 };
 
+#[derive(Debug)]
 pub struct Value {
     handle: ValueHandle,
 }
 
+#[derive(Debug)]
 pub(crate) struct ValueHandle(ffi::duckdb_value);
 
 impl Value {
@@ -25,13 +30,21 @@ impl Value {
         }
     }
     pub unsafe fn varchar_unchecked(&self) -> String {
-        let p = ffi::duckdb_get_varchar(self.handle.0);
+        let p = ffi::duckdb_get_varchar(*self.handle);
         let text = CStr::from_ptr(p).to_string_lossy().to_string();
         ffi::duckdb_free(p as *mut c_void);
         text
     }
     pub unsafe fn i64_unchecked(&self) -> i64 {
-        ffi::duckdb_get_int64(self.handle.0)
+        ffi::duckdb_get_int64(*self.handle)
+    }
+}
+
+impl Deref for ValueHandle {
+    type Target = ffi::duckdb_value;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 

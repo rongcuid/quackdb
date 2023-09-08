@@ -1,15 +1,20 @@
 use std::{
     ffi::{CStr, CString},
+    ops::Deref,
     ptr,
     sync::Arc,
 };
 
 use crate::{database::Database, error::*, ffi, query::QueryResult, statement::PreparedStatement};
 
+#[derive(Debug)]
 pub struct Connection {
-    pub(crate) handle: ffi::duckdb_connection,
+    pub(crate) handle: ConnectionHandle,
     pub(crate) _db: Arc<Database>,
 }
+
+#[derive(Debug)]
+pub struct ConnectionHandle(ffi::duckdb_connection);
 
 #[derive(thiserror::Error, Debug)]
 pub enum ConnectionError {
@@ -25,13 +30,13 @@ impl Connection {
     pub fn connect(database: Arc<Database>) -> DbResult<Arc<Connection>, ConnectionError> {
         let mut handle = ptr::null_mut();
         unsafe {
-            let r = ffi::duckdb_connect(database.handle, &mut handle);
+            let r = ffi::duckdb_connect(*database.handle, &mut handle);
             if r != ffi::DuckDBSuccess {
                 return Ok(Err(ConnectionError::ConnectError));
             }
         }
         Ok(Ok(Arc::new(Connection {
-            handle,
+            handle: ConnectionHandle(handle),
             _db: database,
         })))
     }
@@ -49,7 +54,7 @@ impl Connection {
         let p = cstr.as_ptr();
         unsafe {
             let mut result: ffi::duckdb_result = std::mem::zeroed();
-            let r = ffi::duckdb_query(self.handle, p, &mut result);
+            let r = ffi::duckdb_query(*self.handle, p, &mut result);
             if r != ffi::DuckDBSuccess {
                 let err = ffi::duckdb_result_error(&mut result);
                 let err = Ok(Err(ConnectionError::QueryError(
@@ -71,7 +76,7 @@ impl Connection {
         let p = cstr.as_ptr();
         unsafe {
             let mut prepare: ffi::duckdb_prepared_statement = std::mem::zeroed();
-            let res = ffi::duckdb_prepare(self.handle, p, &mut prepare);
+            let res = ffi::duckdb_prepare(*self.handle, p, &mut prepare);
             if res != ffi::DuckDBSuccess {
                 let err = ffi::duckdb_prepare_error(prepare);
                 let err = Ok(Err(ConnectionError::PrepareError(
@@ -85,10 +90,18 @@ impl Connection {
     }
 }
 
-impl Drop for Connection {
+impl Deref for ConnectionHandle {
+    type Target = ffi::duckdb_connection;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Drop for ConnectionHandle {
     fn drop(&mut self) {
         unsafe {
-            ffi::duckdb_disconnect(&mut self.handle);
+            ffi::duckdb_disconnect(&mut self.0);
         }
     }
 }

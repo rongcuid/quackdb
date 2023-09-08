@@ -1,15 +1,16 @@
 use std::{
-    ops::DerefMut,
+    ops::{Deref, DerefMut},
     sync::{Arc, Mutex, PoisonError},
 };
 
 use crate::{ffi, types::TypeId, vector::Vector};
 
+#[derive(Debug)]
 pub struct DataChunk {
-    handle: Mutex<DataChunkHandle>,
+    handle: DataChunkHandle,
 }
 
-#[derive(Clone)]
+#[derive(Debug)]
 struct DataChunkHandle(ffi::duckdb_data_chunk);
 
 impl DataChunk {
@@ -18,28 +19,36 @@ impl DataChunk {
     }
     pub unsafe fn from_raw(handle: ffi::duckdb_data_chunk) -> Arc<Self> {
         Arc::new(Self {
-            handle: Mutex::new(DataChunkHandle(handle)),
+            handle: DataChunkHandle(handle),
         })
     }
     pub fn reset(&self) {
         unsafe {
-            ffi::duckdb_data_chunk_reset(self.handle.lock().unwrap().0);
+            ffi::duckdb_data_chunk_reset(*self.handle);
         }
     }
     pub fn column_count(&self) -> u64 {
-        unsafe { ffi::duckdb_data_chunk_get_column_count(self.handle.lock().unwrap().0) }
+        unsafe { ffi::duckdb_data_chunk_get_column_count(*self.handle) }
     }
     pub fn vector(&self, col_idx: u64) -> Arc<Vector> {
         unsafe {
-            let v = ffi::duckdb_data_chunk_get_vector(self.handle.lock().unwrap().0, col_idx);
+            let v = ffi::duckdb_data_chunk_get_vector(*self.handle, col_idx);
             Vector::from_raw(v, None)
         }
     }
     pub fn size(&self) -> u64 {
-        unsafe { ffi::duckdb_data_chunk_get_size(self.handle.lock().unwrap().0) }
+        unsafe { ffi::duckdb_data_chunk_get_size(*self.handle) }
     }
     pub unsafe fn set_size_unchecked(&self, size: u64) {
-        ffi::duckdb_data_chunk_set_size(self.handle.lock().unwrap().0, size)
+        ffi::duckdb_data_chunk_set_size(*self.handle, size)
+    }
+}
+
+impl Deref for DataChunkHandle {
+    type Target = ffi::duckdb_data_chunk;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 

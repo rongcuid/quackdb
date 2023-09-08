@@ -1,15 +1,18 @@
 use std::{
     collections::BTreeMap,
     ffi::{c_void, CStr},
+    ops::Deref,
 };
 
 use crate::{ffi, types::TypeId};
 
+#[derive(Debug)]
 pub struct LogicalType {
     pub(crate) handle: LogicalTypeHandle,
     pub kind: LogicalKind,
 }
 
+#[derive(Debug)]
 pub enum LogicalKind {
     Simple {
         type_: TypeId,
@@ -37,6 +40,7 @@ pub enum LogicalKind {
     },
 }
 
+#[derive(Debug)]
 pub(crate) struct LogicalTypeHandle(pub(crate) ffi::duckdb_logical_type);
 
 impl LogicalType {
@@ -126,6 +130,14 @@ impl LogicalKind {
             }
             ty => Self::Simple { type_ },
         })
+    }
+}
+
+impl Deref for LogicalTypeHandle {
+    type Target = ffi::duckdb_logical_type;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 

@@ -1,5 +1,6 @@
 use std::{
     ffi::{c_char, CStr, NulError},
+    ops::Deref,
     path::Path,
     ptr,
     str::Utf8Error,
@@ -16,8 +17,11 @@ use crate::{
 
 #[derive(Debug)]
 pub struct Database {
-    pub(crate) handle: ffi::duckdb_database,
+    pub(crate) handle: DatabaseHandle,
 }
+
+#[derive(Debug)]
+pub struct DatabaseHandle(ffi::duckdb_database);
 
 #[derive(thiserror::Error, Debug)]
 pub enum DatabaseError {
@@ -52,7 +56,9 @@ impl Database {
 
     #[inline]
     pub unsafe fn open_from_raw(raw: ffi::duckdb_database) -> DbResult<Arc<Self>, DatabaseError> {
-        Ok(Ok(Arc::new(Self { handle: raw })))
+        Ok(Ok(Arc::new(Self {
+            handle: DatabaseHandle(raw),
+        })))
     }
 
     pub fn connect(self: &Arc<Self>) -> DbResult<Arc<Connection>, ConnectionError> {
@@ -68,11 +74,19 @@ impl Database {
     }
 }
 
-impl Drop for Database {
+impl Drop for DatabaseHandle {
     fn drop(&mut self) {
         unsafe {
-            ffi::duckdb_close(&mut self.handle);
+            ffi::duckdb_close(&mut self.0);
         }
+    }
+}
+
+impl Deref for DatabaseHandle {
+    type Target = ffi::duckdb_database;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 

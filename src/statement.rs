@@ -15,10 +15,14 @@ use crate::{
     value::Value,
 };
 
+#[derive(Debug)]
 pub struct PreparedStatement {
     handle: PreparedStatementHandle,
     parent: Arc<Connection>,
 }
+
+#[derive(Debug)]
+pub(crate) struct PreparedStatementHandle(ffi::duckdb_prepared_statement);
 
 #[derive(thiserror::Error, Debug)]
 pub enum PreparedStatementError {
@@ -281,8 +285,6 @@ impl PreparedStatement {
         todo!()
     }
 }
-
-pub(crate) struct PreparedStatementHandle(ffi::duckdb_prepared_statement);
 
 impl Deref for PreparedStatementHandle {
     type Target = ffi::duckdb_prepared_statement;
