@@ -33,8 +33,8 @@ impl DataChunk {
     pub fn size(&self) -> u64 {
         unsafe { ffi::duckdb_data_chunk_get_size(self.handle.lock().unwrap().0) }
     }
-    pub fn set_size(&self, size: u64) {
-        unsafe { ffi::duckdb_data_chunk_set_size(self.handle.lock().unwrap().0, size) }
+    pub unsafe fn set_size_unchecked(&self, size: u64) {
+        ffi::duckdb_data_chunk_set_size(self.handle.lock().unwrap().0, size)
     }
 }
 
