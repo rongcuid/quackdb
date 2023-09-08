@@ -24,13 +24,13 @@ impl RawValue {
             handle: ValueHandle(handle),
         }
     }
-    pub unsafe fn varchar(&self) -> String {
+    pub unsafe fn varchar_unchecked(&self) -> String {
         let p = ffi::duckdb_get_varchar(self.handle.0);
         let text = CStr::from_ptr(p).to_string_lossy().to_string();
         ffi::duckdb_free(p as *mut c_void);
         text
     }
-    pub unsafe fn i64(&self) -> i64 {
+    pub unsafe fn i64_unchecked(&self) -> i64 {
         ffi::duckdb_get_int64(self.handle.0)
     }
 }
