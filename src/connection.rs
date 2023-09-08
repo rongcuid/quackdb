@@ -4,7 +4,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::{database::Database, error::*, ffi, query::QueryResult};
+use crate::{database::Database, error::*, ffi, query::QueryResult, statement::PreparedStatement};
 
 pub struct Connection {
     pub(crate) handle: ffi::duckdb_connection,
@@ -17,6 +17,8 @@ pub enum ConnectionError {
     ConnectError,
     #[error("duckdb_query() error: {0}")]
     QueryError(String),
+    #[error("duckdb_prepare() error: {0}")]
+    PrepareError(String),
 }
 
 impl Connection {
@@ -58,6 +60,27 @@ impl Connection {
             }
             let result = QueryResult::from_raw_connection(result, self.clone());
             Ok(Ok(result))
+        }
+    }
+
+    pub fn prepare(
+        self: &Arc<Self>,
+        query: &str,
+    ) -> DbResult<Arc<PreparedStatement>, ConnectionError> {
+        let cstr = CString::new(query)?;
+        let p = cstr.as_ptr();
+        unsafe {
+            let mut prepare: ffi::duckdb_prepared_statement = std::mem::zeroed();
+            let res = ffi::duckdb_prepare(self.handle, p, &mut prepare);
+            if res != ffi::DuckDBSuccess {
+                let err = ffi::duckdb_prepare_error(prepare);
+                let err = Ok(Err(ConnectionError::PrepareError(
+                    CStr::from_ptr(err).to_string_lossy().to_string(),
+                )));
+                ffi::duckdb_destroy_prepare(&mut prepare);
+                return err;
+            }
+            Ok(Ok(PreparedStatement::from_raw(prepare, self.clone())))
         }
     }
 }

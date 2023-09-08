@@ -5,13 +5,13 @@ use crate::{
     ffi,
 };
 
-pub struct RawValue {
+pub struct Value {
     handle: ValueHandle,
 }
 
 pub(crate) struct ValueHandle(ffi::duckdb_value);
 
-impl RawValue {
+impl Value {
     pub fn from_varchar(text: &str) -> Result<Self, NulError> {
         let cstr = CString::new(text)?;
         unsafe { Ok(Self::from_raw(ffi::duckdb_create_varchar(cstr.as_ptr()))) }
