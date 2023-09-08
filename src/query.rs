@@ -7,6 +7,7 @@ use std::{
 
 use crate::{
     connection::Connection,
+    data_chunks::DataChunk,
     ffi,
     statement::PreparedStatement,
     types::{LogicalType, TypeId},
@@ -40,6 +41,11 @@ impl QueryResult {
             handle: Mutex::new(handle),
             _parent: QueryParent::Statement(statement),
         })
+    }
+
+    pub unsafe fn chunk_unchecked(self: &Arc<Self>, chunk_index: u64) -> Arc<DataChunk> {
+        let c = ffi::duckdb_result_get_chunk(*self.handle.lock().unwrap(), chunk_index);
+        DataChunk::from_raw(c)
     }
 
     pub unsafe fn column_name_unchecked(&self, col: u64) -> Option<String> {

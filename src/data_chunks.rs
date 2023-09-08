@@ -16,6 +16,11 @@ impl DataChunk {
     pub fn new(ty: TypeId, column_count: u64) -> Arc<Self> {
         unimplemented!()
     }
+    pub unsafe fn from_raw(handle: ffi::duckdb_data_chunk) -> Arc<Self> {
+        Arc::new(Self {
+            handle: Mutex::new(DataChunkHandle(handle)),
+        })
+    }
     pub fn reset(&self) {
         unsafe {
             ffi::duckdb_data_chunk_reset(self.handle.lock().unwrap().0);
