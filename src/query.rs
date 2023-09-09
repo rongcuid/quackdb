@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use quackdb_internal::{result::QueryResultHandle, types::LogicalType};
+use quackdb_internal::result::QueryResultHandle;
 
-use crate::data_chunks::DataChunk;
+use crate::{data_chunks::DataChunk, types::LogicalType};
 
 #[derive(Debug)]
 pub struct QueryResult {

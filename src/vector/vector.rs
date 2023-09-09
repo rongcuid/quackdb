@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use quackdb_internal::{types::LogicalType, vector::VectorHandle};
+use quackdb_internal::vector::VectorHandle;
 
-use crate::error::Error;
+use crate::{error::Error, types::LogicalType};
 
 use super::Validity;
 
@@ -10,6 +10,9 @@ use super::Validity;
 pub struct Vector {
     pub handle: Arc<VectorHandle>,
 }
+
+#[derive(thiserror::Error, Debug)]
+pub enum VectorError {}
 
 impl From<Arc<VectorHandle>> for Vector {
     fn from(value: Arc<VectorHandle>) -> Self {
@@ -19,7 +22,7 @@ impl From<Arc<VectorHandle>> for Vector {
 
 impl Vector {
     pub fn column_type(&self) -> Option<LogicalType> {
-        unsafe { self.handle.column_type().into() }
+        unsafe { self.handle.column_type().try_into().ok() }
     }
     pub fn data(&self) {
         todo!()
