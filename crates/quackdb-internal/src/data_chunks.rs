@@ -33,9 +33,9 @@ impl DataChunkHandle {
     }
     /// # Safety
     /// `col_idx` must be within valid range
-    pub unsafe fn vector(&self, col_idx: u64) -> Arc<VectorHandle> {
+    pub unsafe fn vector(self: &Arc<Self>, col_idx: u64) -> Arc<VectorHandle> {
         let v = ffi::duckdb_data_chunk_get_vector(self.0, col_idx);
-        VectorHandle::from_raw(v)
+        VectorHandle::from_raw_data_chunk(v, self.clone())
     }
     pub fn size(&self) -> u64 {
         unsafe { ffi::duckdb_data_chunk_get_size(self.0) }

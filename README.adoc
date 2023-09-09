@@ -23,7 +23,9 @@
 *** [x] Most other functions
 *** [ ] Set size
 ** [ ] Vectors
-*** [ ] Child/Set-size/Reserve/...
-*** [ ] Other functions
+*** [ ] Child/Set-size/Reserve/... types
+*** [ ] Struct vector size
+*** [ ] Typed data handle
+*** [x] Other functions
 ** [ ] Statements
 ** [ ] Values

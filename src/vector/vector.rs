@@ -34,34 +34,37 @@ impl Vector {
     pub fn data(&self) {
         todo!()
     }
+    pub fn size(&self) -> u64 {
+        self.handle.size()
+    }
     pub fn validity(&self) -> Option<Validity> {
         Some(self.handle.validity()?.into())
     }
     pub fn ensure_validity_writable(&self) {
         self.handle.ensure_validity_writable()
     }
-    // pub fn assign_string_element(&self, index: u64, str: &str) -> Result<(), Error> {
-    //     self.check_index(index);
-    //     assert!(matches!(
-    //         self.type_.kind,
-    //         LogicalKind::Simple(TypeId::VarChar)
-    //     ));
-    //     let p = CString::new(str)?.as_ptr();
-    //     unsafe {
-    //         self.handle.assign_string_element(index, p);
-    //     }
-    //     Ok(())
-    // }
-    // pub fn child(&self) {
-    //     todo!()
-    // }
-    // pub fn set_size(&mut self, size: u64) {
-    //     assert!(matches!(self.type_.kind, LogicalKind::List { .. }));
-    //     unsafe { self.handle.list_set_size(size) }
-    // }
-    // pub fn reserve(&mut self) {
-    //     todo!()
-    // }
+    pub fn assign_string_element(&self, index: u64, str: &str) -> Result<(), Error> {
+        self.check_index(index);
+        assert!(matches!(
+            self.type_.kind,
+            LogicalKind::Simple(TypeId::VarChar)
+        ));
+        let p = CString::new(str)?.as_ptr();
+        unsafe {
+            self.handle.assign_string_element(index, p);
+        }
+        Ok(())
+    }
+    pub fn child(&self) {
+        todo!()
+    }
+    pub fn set_size(&mut self, size: u64) {
+        assert!(matches!(self.type_.kind, LogicalKind::List { .. }));
+        unsafe { self.handle.list_set_size(size) }
+    }
+    pub fn reserve(&mut self) {
+        todo!()
+    }
 }
 
 impl Vector {

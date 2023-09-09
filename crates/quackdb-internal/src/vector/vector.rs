@@ -1,15 +1,21 @@
 use std::{ffi::c_char, ops::Deref, ptr::NonNull, sync::Arc};
 
-use crate::{ffi, types::LogicalTypeHandle};
+use crate::{data_chunks::DataChunkHandle, ffi, types::LogicalTypeHandle};
+
+use super::{DataHandle, ValidityHandle};
 
 #[derive(Debug)]
 pub struct VectorHandle {
     handle: ffi::duckdb_vector,
-    _parent: Option<Arc<VectorHandle>>,
+    parent: VectorParent,
 }
 
 #[derive(Debug)]
-pub struct ValidityHandle(*mut u64);
+pub enum VectorParent {
+    DataChunk(Arc<DataChunkHandle>),
+    ListVector(Arc<VectorHandle>),
+    StructVector(Arc<VectorHandle>),
+}
 
 impl Deref for VectorHandle {
     type Target = ffi::duckdb_vector;
@@ -22,19 +28,52 @@ impl Deref for VectorHandle {
 impl VectorHandle {
     /// # Safety
     /// Takes ownership.
-    pub unsafe fn from_raw(raw: ffi::duckdb_vector) -> Arc<Self> {
+    pub unsafe fn from_raw_data_chunk(
+        raw: ffi::duckdb_vector,
+        parent: Arc<DataChunkHandle>,
+    ) -> Arc<Self> {
         assert!(raw != std::ptr::null_mut());
         Arc::new(Self {
             handle: raw,
-            _parent: None,
+            parent: VectorParent::DataChunk(parent),
         })
     }
-
+    /// # Safety
+    /// Takes ownership.
+    pub unsafe fn from_raw_list_vector(
+        raw: ffi::duckdb_vector,
+        parent: Arc<VectorHandle>,
+    ) -> Arc<Self> {
+        assert!(raw != std::ptr::null_mut());
+        Arc::new(Self {
+            handle: raw,
+            parent: VectorParent::ListVector(parent),
+        })
+    }
+    /// # Safety
+    /// Takes ownership.
+    pub unsafe fn from_raw_struct_vector(
+        raw: ffi::duckdb_vector,
+        parent: Arc<VectorHandle>,
+    ) -> Arc<Self> {
+        assert!(raw != std::ptr::null_mut());
+        Arc::new(Self {
+            handle: raw,
+            parent: VectorParent::StructVector(parent),
+        })
+    }
+    pub fn size(&self) -> u64 {
+        self.parent.size()
+    }
     pub fn column_type(&self) -> LogicalTypeHandle {
         unsafe { LogicalTypeHandle::from_raw(ffi::duckdb_vector_get_column_type(self.handle)) }
     }
-    pub fn data(&self) {
-        todo!()
+    pub fn data(&self) -> Option<DataHandle> {
+        unsafe {
+            let d = ffi::duckdb_vector_get_data(self.handle);
+            let handle = NonNull::new(d)?.as_ptr();
+            Some(DataHandle::from_raw(handle))
+        }
     }
     pub fn validity(&self) -> Option<ValidityHandle> {
         unsafe {
@@ -67,10 +106,7 @@ impl VectorHandle {
     /// # Safety
     /// This must be a list vector
     pub unsafe fn list_child(self: &Arc<Self>) -> Arc<Self> {
-        Arc::new(Self {
-            handle: ffi::duckdb_list_vector_get_child(self.handle),
-            _parent: Some(self.clone()),
-        })
+        Self::from_raw_list_vector(ffi::duckdb_list_vector_get_child(self.handle), self.clone())
     }
     /// # Safety
     /// This must be a list vector
@@ -98,40 +134,25 @@ impl VectorHandle {
     /// # Safety
     /// This must be a struct vector
     pub unsafe fn struct_child(self: &Arc<Self>, index: u64) -> Arc<Self> {
-        Arc::new(Self {
-            handle: ffi::duckdb_struct_vector_get_child(self.handle, index),
-            _parent: Some(self.clone()),
-        })
+        // Arc::new(Self {
+        //     handle: ffi::duckdb_struct_vector_get_child(self.handle, index),
+        //     _parent: Some(self.clone()),
+        // })
+        Self::from_raw_struct_vector(
+            ffi::duckdb_struct_vector_get_child(self.handle, index),
+            self.clone(),
+        )
     }
+}
+
+impl VectorParent {
     pub fn size(&self) -> u64 {
-        unsafe { ffi::duckdb_vector_size() }
-    }
-}
-
-impl Deref for ValidityHandle {
-    type Target = *mut u64;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl ValidityHandle {
-    /// # Safety
-    /// Takes ownership
-    pub unsafe fn from_raw(raw: *mut u64) -> Self {
-        Self(raw)
-    }
-    /// # Safety
-    /// * Validity must be writable
-    /// * `row` must be in range
-    pub unsafe fn row_is_valid(&self, row: u64) -> bool {
-        unsafe { ffi::duckdb_validity_row_is_valid(self.0, row) }
-    }
-    /// # Safety
-    /// * Validity must be writable
-    /// * `row` must be in range
-    pub unsafe fn set_row_validity(&self, row: u64, valid: bool) {
-        ffi::duckdb_validity_set_row_validity(self.0, row, valid);
+        unsafe {
+            match self {
+                VectorParent::DataChunk(d) => d.size(),
+                VectorParent::ListVector(v) => v.list_size(),
+                VectorParent::StructVector(v) => unimplemented!(),
+            }
+        }
     }
 }
