@@ -1,11 +1,9 @@
-use std::{
-    ffi::{c_char, CString},
-    ptr,
-};
+use std::ffi::CString;
 
+use quackdb_internal::config::ConfigHandle;
 use strum::{Display, EnumString};
 
-use crate::{error::*, ffi};
+use crate::error::*;
 
 /// duckdb access mode, default is Automatic
 #[derive(Debug, Eq, PartialEq, EnumString, Display)]
@@ -47,23 +45,20 @@ pub enum DefaultNullOrder {
 /// Refer to https://github.com/duckdb/duckdb/blob/master/src/main/config.cpp
 /// Adapted from `duckdb-rs` crate
 /// TODO: support everything in the API
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Config {
-    pub(crate) config: Option<ffi::duckdb_config>,
+    pub handle: ConfigHandle,
 }
 
 #[derive(thiserror::Error, Debug)]
 pub enum ConfigError {
-    #[error("duckdb_set_config() returns {0}: set {1}:{2} error")]
-    ConfigSetError(ffi::duckdb_state, String, String),
+    #[error("config create error")]
+    CreateError,
+    #[error("config set error: {0}:{1}")]
+    SetError(String, String),
 }
 
 impl Config {
-    pub(crate) fn duckdb_config(&self) -> ffi::duckdb_config {
-        self.config
-            .unwrap_or(std::ptr::null_mut() as ffi::duckdb_config)
-    }
-
     /// Access mode of the database ([AUTOMATIC], READ_ONLY or READ_WRITE)
     pub fn access_mode(mut self, mode: AccessMode) -> DbResult<Config, ConfigError> {
         Ok(self.set("access_mode", &mode.to_string())?.and(Ok(self)))
@@ -114,36 +109,21 @@ impl Config {
     }
 
     fn set(&mut self, key: &str, value: &str) -> DbResult<(), ConfigError> {
-        if self.config.is_none() {
-            let mut config: ffi::duckdb_config = ptr::null_mut();
-            let state = unsafe { ffi::duckdb_create_config(&mut config) };
-            assert_eq!(state, ffi::DuckDBSuccess);
-            self.config = Some(config);
+        if self.handle.is_null() {
+            if let Ok(config) = ConfigHandle::create() {
+                self.handle = config;
+            } else {
+                return Ok(Err(ConfigError::CreateError));
+            }
         }
-        let c_key = CString::new(key).unwrap();
-        let c_value = CString::new(value).unwrap();
-        let state = unsafe {
-            ffi::duckdb_set_config(
-                self.config.unwrap(),
-                c_key.as_ptr() as *const c_char,
-                c_value.as_ptr() as *const c_char,
-            )
-        };
-        if state != ffi::DuckDBSuccess {
-            return Ok(Err(ConfigError::ConfigSetError(
-                state,
-                key.to_owned(),
-                value.to_owned(),
-            )));
-        }
-        Ok(Ok(()))
-    }
-}
-
-impl Drop for Config {
-    fn drop(&mut self) {
-        if self.config.is_some() {
-            unsafe { ffi::duckdb_destroy_config(&mut self.config.unwrap()) };
+        let c_key = CString::new(key)?.as_ptr();
+        let c_value = CString::new(value)?.as_ptr();
+        unsafe {
+            if self.handle.set(c_key, c_value).is_ok() {
+                Ok(Ok(()))
+            } else {
+                Ok(Err(ConfigError::SetError(key.to_owned(), value.to_owned())))
+            }
         }
     }
 }

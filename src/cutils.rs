@@ -10,12 +10,12 @@ pub fn option_path_to_ptr(path: Option<&Path>) -> Result<*const i8, NulError> {
 }
 
 pub fn option_path_to_cstring(path: Option<&Path>) -> Result<Option<CString>, NulError> {
-    path.map(|p| path_to_cstring(p.as_ref())).transpose()
+    path.map(path_to_cstring).transpose()
 }
 
 #[cfg(unix)]
 pub fn path_to_cstring(p: &Path) -> Result<CString, NulError> {
-    Ok(CString::new(p.as_os_str().as_bytes())?)
+    CString::new(p.as_os_str().as_bytes())
 }
 
 #[cfg(not(unix))]

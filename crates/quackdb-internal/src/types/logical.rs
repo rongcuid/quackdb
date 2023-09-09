@@ -4,12 +4,71 @@ use std::{
     ops::Deref,
 };
 
-use crate::{ffi, types::TypeId};
+use crate::ffi;
+
+use super::TypeId;
 
 #[derive(Debug)]
 pub struct LogicalType {
-    pub(crate) handle: LogicalTypeHandle,
+    pub handle: LogicalTypeHandle,
     pub kind: LogicalKind,
+}
+
+impl From<LogicalTypeHandle> for Option<LogicalType> {
+    fn from(value: LogicalTypeHandle) -> Self {
+        unsafe {
+            let raw = value.0;
+            Some(LogicalType {
+                handle: value,
+                kind: LogicalKind::from_raw(raw)?,
+            })
+        }
+    }
+}
+
+impl LogicalType {
+    pub unsafe fn from_raw(raw: ffi::duckdb_logical_type) -> Option<Self> {
+        Some(Self {
+            handle: LogicalTypeHandle::from_raw(raw),
+            kind: LogicalKind::from_raw(raw)?,
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct LogicalTypeHandle(ffi::duckdb_logical_type);
+
+impl LogicalTypeHandle {
+    pub unsafe fn from_raw(handle: ffi::duckdb_logical_type) -> Self {
+        Self(handle)
+    }
+    pub unsafe fn from_id(type_: TypeId) -> Self {
+        match type_ {
+            TypeId::Decimal => {
+                panic!("duckdb_create_logical_type() should not be used with DUCKDB_TYPE_DECIMAL")
+            }
+            id => Self::from_raw(ffi::duckdb_create_logical_type(id.to_raw())),
+        }
+    }
+    pub fn type_id(&self) -> TypeId {
+        unsafe { TypeId::from_raw(ffi::duckdb_get_type_id(self.0)).expect("logical type invalid") }
+    }
+}
+
+impl Deref for LogicalTypeHandle {
+    type Target = ffi::duckdb_logical_type;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Drop for LogicalTypeHandle {
+    fn drop(&mut self) {
+        unsafe {
+            ffi::duckdb_destroy_logical_type(&mut self.0);
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -38,32 +97,6 @@ pub enum LogicalKind {
     Struct {
         children: BTreeMap<String, LogicalType>,
     },
-}
-
-#[derive(Debug)]
-pub(crate) struct LogicalTypeHandle(pub(crate) ffi::duckdb_logical_type);
-
-impl LogicalType {
-    pub unsafe fn from_raw(handle: ffi::duckdb_logical_type) -> Option<Self> {
-        Some(Self {
-            handle: LogicalTypeHandle(handle),
-            kind: LogicalKind::from_raw(handle)?,
-        })
-    }
-    pub unsafe fn from_id(type_: TypeId) -> Self {
-        match type_ {
-            TypeId::Decimal => {
-                panic!("duckdb_create_logical_type() should not be used with DUCKDB_TYPE_DECIMAL")
-            }
-            id => Self::from_raw(ffi::duckdb_create_logical_type(id.to_raw()))
-                .expect("trying to create logical type from invalid type"),
-        }
-    }
-    pub fn type_id(&self) -> TypeId {
-        unsafe {
-            TypeId::from_raw(ffi::duckdb_get_type_id(self.handle.0)).expect("logical type invalid")
-        }
-    }
 }
 
 impl LogicalKind {
@@ -130,21 +163,5 @@ impl LogicalKind {
             }
             ty => Self::Simple { type_ },
         })
-    }
-}
-
-impl Deref for LogicalTypeHandle {
-    type Target = ffi::duckdb_logical_type;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl Drop for LogicalTypeHandle {
-    fn drop(&mut self) {
-        unsafe {
-            ffi::duckdb_destroy_logical_type(&mut self.0);
-        }
     }
 }

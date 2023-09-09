@@ -1,7 +1,5 @@
 use std::{ffi::NulError, str::Utf8Error};
 
-use crate::ffi;
-
 /// Global/system error that is not related to individual operations
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
