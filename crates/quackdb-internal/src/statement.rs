@@ -28,7 +28,11 @@ impl Drop for PreparedStatementHandle {
     }
 }
 
+/// # Safety
+/// * All parameter indices must be in range
 impl PreparedStatementHandle {
+    /// # Safety
+    /// Takes ownership
     pub unsafe fn from_raw(
         raw: ffi::duckdb_prepared_statement,
         parent: Arc<ConnectionHandle>,
@@ -41,6 +45,8 @@ impl PreparedStatementHandle {
     pub fn nparams(&self) -> u64 {
         unsafe { ffi::duckdb_nparams(self.handle) }
     }
+    /// # Safety
+    /// * `param_idx` must be in range
     pub unsafe fn param_type(&self, param_idx: u64) -> TypeId {
         let ty = ffi::duckdb_param_type(self.handle, param_idx);
         TypeId::from_raw(ty).expect("invalid duckdb type")
@@ -70,6 +76,7 @@ impl PreparedStatementHandle {
     //         Ok(Some(param_idx))
     //     }
     // }
+
     pub unsafe fn bind_boolean(&self, param_idx: u64, val: bool) -> Result<(), ()> {
         if ffi::duckdb_bind_boolean(self.handle, param_idx, val) != ffi::DuckDBSuccess {
             return Err(());
