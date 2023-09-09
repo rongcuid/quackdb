@@ -24,7 +24,7 @@
 *** [ ] Set size
 ** [ ] Vectors
 *** [ ] Child/Set-size/Reserve/... types
-*** [ ] Struct vector size
+*** [x] Struct vector size
 *** [ ] Typed data handle
 *** [x] Other functions
 ** [ ] Statements
