@@ -1,0 +1,6 @@
+= QuackDB
+
+== TODO
+
+- [ ] Move handles to an internal module
+- [ ] Make sure internal module do not reference higher level types

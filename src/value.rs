@@ -19,11 +19,7 @@ impl From<ValueHandle> for Value {
     }
 }
 
-impl Value {
-    pub unsafe fn from_raw(raw: ffi::duckdb_value) -> Self {
-        ValueHandle(raw).into()
-    }
-}
+impl Value {}
 
 impl ValueHandle {
     pub unsafe fn create_varchar(text: *const c_char) -> Self {

@@ -8,7 +8,7 @@ use std::{
 
 use crate::{error::Error, ffi, types::LogicalType, types::TypeId};
 
-use super::Validity;
+use super::{Validity, ValidityHandle};
 
 #[derive(Debug)]
 pub struct Vector {
@@ -72,7 +72,7 @@ impl VectorHandle {
         unsafe {
             let v = ffi::duckdb_vector_get_validity(self.handle);
             let handle = NonNull::new(v)?.as_ptr();
-            Some(Validity::from_raw(handle))
+            Some(ValidityHandle::from_raw(handle).into())
         }
     }
     pub fn ensure_validity_writable(&self) {

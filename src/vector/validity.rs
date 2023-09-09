@@ -14,11 +14,6 @@ impl From<ValidityHandle> for Validity {
 }
 
 impl Validity {
-    pub unsafe fn from_raw(raw: *mut u64) -> Self {
-        Self {
-            handle: ValidityHandle::from_raw(raw),
-        }
-    }
     pub fn row_is_valid(&self, row: u64) -> bool {
         todo!()
     }
