@@ -14,9 +14,13 @@ impl DatabaseHandle {
     pub unsafe fn from_raw(raw: ffi::duckdb_database) -> Arc<Self> {
         Arc::new(Self(raw))
     }
+    /// # Safety
+    /// `path` must be null-terminated
     pub unsafe fn open(path: *const c_char) -> Result<Arc<Self>, String> {
         Self::open_ext(path, &ConfigHandle::from_raw(ptr::null_mut()))
     }
+    /// # Safety
+    /// `path` must be null-terminated
     pub unsafe fn open_ext(
         path: *const c_char,
         config: &ConfigHandle,
@@ -32,13 +36,19 @@ impl DatabaseHandle {
         Ok(Self::from_raw(db))
     }
 
-    pub unsafe fn connect(self: &Arc<Self>) -> Result<Arc<ConnectionHandle>, ()> {
+    pub fn connect(self: &Arc<Self>) -> Result<Arc<ConnectionHandle>, ()> {
         let mut handle = ptr::null_mut();
-        let r = ffi::duckdb_connect(self.0, &mut handle);
+        let r = unsafe { ffi::duckdb_connect(self.0, &mut handle) };
         if r != ffi::DuckDBSuccess {
             return Err(());
         }
-        Ok(ConnectionHandle::from_raw(handle, self.clone()))
+        Ok(unsafe { ConnectionHandle::from_raw(handle, self.clone()) })
+    }
+    /// # Safety
+    /// Force close connection without checking for usage.
+    /// Normally you should let Rust handle this.
+    pub unsafe fn close(&mut self) {
+        ffi::duckdb_close(&mut self.0);
     }
 
     pub fn library_version() -> String {
@@ -51,9 +61,7 @@ impl DatabaseHandle {
 
 impl Drop for DatabaseHandle {
     fn drop(&mut self) {
-        unsafe {
-            ffi::duckdb_close(&mut self.0);
-        }
+        unsafe { self.close() }
     }
 }
 

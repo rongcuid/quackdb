@@ -4,6 +4,14 @@
 
 - [x] Move handles to an internal module
 - [x] Make sure internal module do not reference higher level types
+- [ ] Implement and document low level interface
+-- [x] Database
+-- [ ] Connection
+-- [ ] Query results
+-- [ ] Data Chunks
+-- [ ] Vectors
+-- [ ] Statements
+-- [ ] Values
 - [ ] Implement high level interface
 -- [ ] Database
 -- [ ] Connection
