@@ -12,7 +12,7 @@
 -- [x] Vectors
 -- [x] Validity
 -- [x] Statements
--- [ ] Values
+-- [x] Values
 - [ ] Implement high level interface
 -- [ ] Database
 -- [ ] Connection

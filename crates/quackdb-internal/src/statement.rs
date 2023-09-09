@@ -22,9 +22,7 @@ impl Deref for PreparedStatementHandle {
 
 impl Drop for PreparedStatementHandle {
     fn drop(&mut self) {
-        unsafe {
-            ffi::duckdb_destroy_prepare(&mut self.handle);
-        }
+        unsafe { self.destroy() }
     }
 }
 
@@ -41,6 +39,11 @@ impl PreparedStatementHandle {
             handle: raw,
             _parent: parent,
         })
+    }
+    /// # Safety
+    /// Does not consider utilization. Normally, let Rust handle this automatically.
+    pub unsafe fn destroy(&mut self) {
+        ffi::duckdb_destroy_prepare(&mut self.handle);
     }
     pub fn nparams(&self) -> u64 {
         unsafe { ffi::duckdb_nparams(self.handle) }

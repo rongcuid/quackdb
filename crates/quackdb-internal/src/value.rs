@@ -18,26 +18,34 @@ impl Deref for ValueHandle {
 
 impl Drop for ValueHandle {
     fn drop(&mut self) {
-        unsafe {
-            ffi::duckdb_destroy_value(&mut self.0);
-        }
+        unsafe { self.destroy() }
     }
 }
 
 impl ValueHandle {
+    /// # Safety
+    /// `text` must be null-terminated
     pub unsafe fn create_varchar(text: *const c_char) -> Self {
         Self(ffi::duckdb_create_varchar(text))
     }
-    pub unsafe fn create_i64(val: i64) -> Self {
-        Self(ffi::duckdb_create_int64(val))
+    pub fn create_i64(val: i64) -> Self {
+        unsafe { Self(ffi::duckdb_create_int64(val)) }
     }
-
+    /// # Safety
+    /// Does not consider usage. Normally, let `Drop` handle this.
+    pub unsafe fn destroy(&mut self) {
+        ffi::duckdb_destroy_value(&mut self.0);
+    }
+    /// # Safety
+    /// The value must be a varchar value
     pub unsafe fn varchar(&self) -> String {
         let p = ffi::duckdb_get_varchar(self.0);
         let text = CStr::from_ptr(p).to_string_lossy().to_owned().to_string();
         ffi::duckdb_free(p as *mut c_void);
         text
     }
+    /// # Safety
+    /// The value must be an int64 value
     pub unsafe fn i64(&self) -> i64 {
         ffi::duckdb_get_int64(self.0)
     }
