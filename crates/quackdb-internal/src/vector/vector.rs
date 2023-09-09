@@ -63,7 +63,13 @@ impl VectorHandle {
         })
     }
     pub fn size(&self) -> u64 {
-        self.parent.size()
+        unsafe {
+            match &self.parent {
+                VectorParent::DataChunk(d) => d.size(),
+                VectorParent::ListVector(v) => v.list_size(),
+                VectorParent::StructVector(_) => self.column_type().struct_type_child_count(),
+            }
+        }
     }
     pub fn column_type(&self) -> LogicalTypeHandle {
         unsafe { LogicalTypeHandle::from_raw(ffi::duckdb_vector_get_column_type(self.handle)) }
@@ -142,17 +148,5 @@ impl VectorHandle {
             ffi::duckdb_struct_vector_get_child(self.handle, index),
             self.clone(),
         )
-    }
-}
-
-impl VectorParent {
-    pub fn size(&self) -> u64 {
-        unsafe {
-            match self {
-                VectorParent::DataChunk(d) => d.size(),
-                VectorParent::ListVector(v) => v.list_size(),
-                VectorParent::StructVector(v) => unimplemented!(),
-            }
-        }
     }
 }
