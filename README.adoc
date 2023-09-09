@@ -2,5 +2,13 @@
 
 == TODO
 
-- [ ] Move handles to an internal module
-- [ ] Make sure internal module do not reference higher level types
+- [x] Move handles to an internal module
+- [x] Make sure internal module do not reference higher level types
+- [ ] Implement high level interface
+-- [ ] Database
+-- [ ] Connection
+-- [ ] Query results
+-- [ ] Data Chunks
+-- [ ] Vectors
+-- [ ] Statements
+-- [ ] Values
