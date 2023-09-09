@@ -14,10 +14,14 @@
 -- [x] Statements
 -- [x] Values
 - [ ] Implement high level interface
--- [ ] Database
--- [ ] Connection
+-- [x] Database
+-- [x] Connection
 -- [ ] Query results
+--- [x] Chunks, columns, and rows
+--- [ ] Values
 -- [ ] Data Chunks
+--- [x] Most other functions
+--- [ ] Set size
 -- [ ] Vectors
 -- [ ] Statements
 -- [ ] Values

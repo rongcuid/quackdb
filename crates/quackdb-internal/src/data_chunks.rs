@@ -1,11 +1,18 @@
 use std::{ops::Deref, sync::Arc};
 
-use crate::{ffi, vector::VectorHandle};
+use crate::{ffi, types::LogicalTypeHandle, vector::VectorHandle};
 
 #[derive(Debug)]
 pub struct DataChunkHandle(ffi::duckdb_data_chunk);
 
 impl DataChunkHandle {
+    /// # Safety
+    /// `types` must be valid
+    pub unsafe fn create(types: &[&LogicalTypeHandle]) -> Arc<Self> {
+        let mut types = types.into_iter().map(|x| ***x).collect::<Vec<_>>();
+        let handle = ffi::duckdb_create_data_chunk(types.as_mut_ptr(), types.len() as u64);
+        Self::from_raw(handle)
+    }
     /// # Safety
     /// Takes ownership
     pub unsafe fn from_raw(raw: ffi::duckdb_data_chunk) -> Arc<Self> {

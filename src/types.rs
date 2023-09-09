@@ -18,6 +18,14 @@ impl TryFrom<LogicalTypeHandle> for LogicalType {
     }
 }
 
+impl TryFrom<TypeId> for LogicalType {
+    type Error = ();
+    fn try_from(value: TypeId) -> Result<Self, Self::Error> {
+        let handle = unsafe { LogicalTypeHandle::from_id(value) };
+        Self::try_from(handle)
+    }
+}
+
 #[derive(Debug)]
 pub enum LogicalKind {
     Simple {

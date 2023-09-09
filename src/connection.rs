@@ -2,7 +2,7 @@ use std::{ffi::CString, sync::Arc};
 
 use quackdb_internal::connection::ConnectionHandle;
 
-use crate::{error::*, query::QueryResult, statement::PreparedStatement};
+use crate::{error::*, query_result::QueryResult, statement::PreparedStatement};
 
 #[derive(Debug)]
 pub struct Connection {

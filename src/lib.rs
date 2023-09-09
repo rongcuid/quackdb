@@ -6,7 +6,7 @@ mod connection;
 mod data_chunks;
 mod database;
 mod error;
-mod query;
+mod query_result;
 mod replacement_scan;
 mod statement;
 mod table_function;

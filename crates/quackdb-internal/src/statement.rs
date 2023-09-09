@@ -4,7 +4,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::{connection::ConnectionHandle, ffi, result::QueryResultHandle, types::TypeId};
+use crate::{connection::ConnectionHandle, ffi, query_result::QueryResultHandle, types::TypeId};
 
 #[derive(Debug)]
 pub struct PreparedStatementHandle {

@@ -5,7 +5,8 @@ use std::{
 };
 
 use crate::{
-    database::DatabaseHandle, ffi, result::QueryResultHandle, statement::PreparedStatementHandle,
+    database::DatabaseHandle, ffi, query_result::QueryResultHandle,
+    statement::PreparedStatementHandle,
 };
 
 #[derive(Debug)]

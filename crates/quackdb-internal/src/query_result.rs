@@ -75,6 +75,12 @@ impl QueryResultHandle {
         let c = ffi::duckdb_result_get_chunk(self.handle, chunk_index);
         DataChunkHandle::from_raw(c)
     }
+    pub fn chunk_count(&self) -> u64 {
+        unsafe { ffi::duckdb_result_chunk_count(self.handle) }
+    }
+    pub fn is_streaming(&self) -> bool {
+        unsafe { ffi::duckdb_result_is_streaming(self.handle) }
+    }
     /// # Safety
     /// `col` must be within valid range.
     pub unsafe fn column_name(&self, col: u64) -> Option<String> {
