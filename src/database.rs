@@ -19,9 +19,6 @@ pub struct Database {
     pub handle: Arc<DatabaseHandle>,
 }
 
-#[derive(Debug)]
-pub struct DatabaseHandle(ffi::duckdb_database);
-
 #[derive(thiserror::Error, Debug)]
 pub enum DatabaseError {
     #[error("duckdb_open_ext() error: {0}")]
@@ -56,13 +53,6 @@ impl Database {
         }
     }
 
-    #[inline]
-    pub unsafe fn open_from_raw(raw: ffi::duckdb_database) -> DbResult<Self, DatabaseError> {
-        Ok(Ok(Self {
-            handle: Arc::new(DatabaseHandle(raw)),
-        }))
-    }
-
     pub fn connect(&self) -> DbResult<Connection, ConnectionError> {
         Ok(Connection::connect(&self)?)
     }
@@ -73,22 +63,6 @@ impl Database {
             p = ffi::duckdb_library_version();
             Ok(Ok(CStr::from_ptr(p).to_str()?.to_owned()))
         }
-    }
-}
-
-impl Drop for DatabaseHandle {
-    fn drop(&mut self) {
-        unsafe {
-            ffi::duckdb_close(&mut self.0);
-        }
-    }
-}
-
-impl Deref for DatabaseHandle {
-    type Target = ffi::duckdb_database;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
     }
 }
 
