@@ -6,7 +6,7 @@
 - [x] Make sure internal module do not reference higher level types
 - [ ] Implement and document low level interface
 -- [x] Database
--- [ ] Connection
+-- [x] Connection
 -- [ ] Query results
 -- [ ] Data Chunks
 -- [ ] Vectors

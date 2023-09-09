@@ -21,6 +21,8 @@ impl ConnectionHandle {
             _parent: parent,
         })
     }
+    /// # Safety
+    /// `sql` must be null-terminated
     pub unsafe fn query(
         self: &Arc<Self>,
         sql: *const c_char,
@@ -35,6 +37,8 @@ impl ConnectionHandle {
         }
         Ok(QueryResultHandle::from_raw_connection(result, self.clone()))
     }
+    /// # Safety
+    /// `query` must be null-terminated
     pub unsafe fn prepare(
         self: &Arc<Self>,
         query: *const c_char,
@@ -49,6 +53,12 @@ impl ConnectionHandle {
         }
         Ok(PreparedStatementHandle::from_raw(prepare, self.clone()))
     }
+    /// # Safety
+    /// Disconnects without checking usage.
+    /// Normally you should let Rust automatically manage this.
+    pub unsafe fn disconnect(&mut self) {
+        ffi::duckdb_disconnect(&mut self.handle);
+    }
 }
 
 impl Deref for ConnectionHandle {
@@ -62,7 +72,7 @@ impl Deref for ConnectionHandle {
 impl Drop for ConnectionHandle {
     fn drop(&mut self) {
         unsafe {
-            ffi::duckdb_disconnect(&mut self.handle);
+            self.disconnect();
         }
     }
 }
