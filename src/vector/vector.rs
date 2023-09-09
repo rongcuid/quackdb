@@ -12,21 +12,22 @@ use super::Validity;
 
 #[derive(Debug)]
 pub struct Vector {
-    handle: Arc<VectorHandle>,
+    pub handle: Arc<VectorHandle>,
 }
 
 #[derive(Debug)]
-pub(crate) struct VectorHandle {
+pub struct VectorHandle {
     handle: ffi::duckdb_vector,
-    parent: Option<Arc<VectorHandle>>,
+    _parent: Option<Arc<VectorHandle>>,
+}
+
+impl From<Arc<VectorHandle>> for Vector {
+    fn from(value: Arc<VectorHandle>) -> Self {
+        Self { handle: value }
+    }
 }
 
 impl Vector {
-    pub unsafe fn from_raw(handle: ffi::duckdb_vector) -> Self {
-        Self {
-            handle: VectorHandle::from_raw(handle),
-        }
-    }
     pub fn column_type(&self) -> Option<LogicalType> {
         self.handle.column_type()
     }
@@ -57,7 +58,7 @@ impl VectorHandle {
         assert!(raw != std::ptr::null_mut());
         Arc::new(Self {
             handle: raw,
-            parent: None,
+            _parent: None,
         })
     }
 
@@ -95,7 +96,7 @@ impl VectorHandle {
     pub unsafe fn list_child(self: &Arc<Self>) -> Arc<Self> {
         Arc::new(Self {
             handle: ffi::duckdb_list_vector_get_child(self.handle),
-            parent: Some(self.clone()),
+            _parent: Some(self.clone()),
         })
     }
     pub unsafe fn list_size(&self) -> u64 {
@@ -116,7 +117,7 @@ impl VectorHandle {
     pub unsafe fn struct_child(self: &Arc<Self>, index: u64) -> Arc<Self> {
         Arc::new(Self {
             handle: ffi::duckdb_struct_vector_get_child(self.handle, index),
-            parent: Some(self.clone()),
+            _parent: Some(self.clone()),
         })
     }
 }

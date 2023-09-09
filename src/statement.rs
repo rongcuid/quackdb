@@ -1,5 +1,5 @@
 use std::{
-    ffi::{c_char, c_void, CString},
+    ffi::{c_char, c_void},
     ops::Deref,
     sync::Arc,
 };
@@ -7,22 +7,22 @@ use std::{
 use libduckdb_sys::DuckDBSuccess;
 
 use crate::{
-    connection::Connection,
-    error::{DbResult, Error},
+    connection::{Connection, ConnectionHandle},
     ffi,
-    query::QueryResult,
+    query::{QueryResult, QueryResultHandle},
     types::TypeId,
-    value::Value,
 };
 
 #[derive(Debug)]
 pub struct PreparedStatement {
-    handle: PreparedStatementHandle,
-    parent: Arc<Connection>,
+    pub handle: Arc<PreparedStatementHandle>,
 }
 
 #[derive(Debug)]
-pub(crate) struct PreparedStatementHandle(ffi::duckdb_prepared_statement);
+pub struct PreparedStatementHandle {
+    handle: ffi::duckdb_prepared_statement,
+    _parent: Arc<ConnectionHandle>,
+}
 
 #[derive(thiserror::Error, Debug)]
 pub enum PreparedStatementError {
@@ -34,26 +34,34 @@ pub enum PreparedStatementError {
     ExecuteError,
 }
 
-impl PreparedStatement {
+impl PreparedStatement {}
+
+impl From<Arc<PreparedStatementHandle>> for PreparedStatement {
+    fn from(value: Arc<PreparedStatementHandle>) -> Self {
+        Self { handle: value }
+    }
+}
+
+impl PreparedStatementHandle {
     pub unsafe fn from_raw(
-        handle: ffi::duckdb_prepared_statement,
-        parent: Arc<Connection>,
+        raw: ffi::duckdb_prepared_statement,
+        parent: Arc<ConnectionHandle>,
     ) -> Arc<Self> {
         Arc::new(Self {
-            handle: PreparedStatementHandle(handle),
-            parent,
+            handle: raw,
+            _parent: parent,
         })
     }
     pub fn nparams(&self) -> u64 {
-        unsafe { ffi::duckdb_nparams(*self.handle) }
+        unsafe { ffi::duckdb_nparams(self.handle) }
     }
     pub unsafe fn param_type_unchecked(&self, param_idx: u64) -> Option<TypeId> {
-        let ty = ffi::duckdb_param_type(*self.handle, param_idx);
+        let ty = ffi::duckdb_param_type(self.handle, param_idx);
         TypeId::from_raw(ty)
     }
     pub fn clear_bindings(&self) -> Result<(), PreparedStatementError> {
         unsafe {
-            let res = ffi::duckdb_clear_bindings(*self.handle);
+            let res = ffi::duckdb_clear_bindings(self.handle);
             if res != DuckDBSuccess {
                 return Err(PreparedStatementError::ClearBindingsError);
             }
@@ -69,7 +77,7 @@ impl PreparedStatement {
     //     let p = CString::new(name)?.as_ptr();
     //     unsafe {
     //         let mut param_idx: u64 = 0;
-    //         let res = ffi::duckdb_bind_parameter_index(*self.handle, &mut param_idx, p);
+    //         let res = ffi::duckdb_bind_parameter_index(self.handle, &mut param_idx, p);
     //         if res != ffi::DuckDBSuccess {
     //             return Ok(None);
     //         }
@@ -81,7 +89,7 @@ impl PreparedStatement {
         param_idx: u64,
         val: bool,
     ) -> Result<(), PreparedStatementError> {
-        if ffi::duckdb_bind_boolean(*self.handle, param_idx, val) != DuckDBSuccess {
+        if ffi::duckdb_bind_boolean(self.handle, param_idx, val) != DuckDBSuccess {
             return Err(PreparedStatementError::BindError);
         }
         Ok(())
@@ -91,7 +99,7 @@ impl PreparedStatement {
         param_idx: u64,
         val: i8,
     ) -> Result<(), PreparedStatementError> {
-        if ffi::duckdb_bind_int8(*self.handle, param_idx, val) != DuckDBSuccess {
+        if ffi::duckdb_bind_int8(self.handle, param_idx, val) != DuckDBSuccess {
             return Err(PreparedStatementError::BindError);
         }
         Ok(())
@@ -101,7 +109,7 @@ impl PreparedStatement {
         param_idx: u64,
         val: i16,
     ) -> Result<(), PreparedStatementError> {
-        if ffi::duckdb_bind_int16(*self.handle, param_idx, val) != DuckDBSuccess {
+        if ffi::duckdb_bind_int16(self.handle, param_idx, val) != DuckDBSuccess {
             return Err(PreparedStatementError::BindError);
         }
         Ok(())
@@ -111,7 +119,7 @@ impl PreparedStatement {
         param_idx: u64,
         val: i32,
     ) -> Result<(), PreparedStatementError> {
-        if ffi::duckdb_bind_int32(*self.handle, param_idx, val) != DuckDBSuccess {
+        if ffi::duckdb_bind_int32(self.handle, param_idx, val) != DuckDBSuccess {
             return Err(PreparedStatementError::BindError);
         }
         Ok(())
@@ -121,7 +129,7 @@ impl PreparedStatement {
         param_idx: u64,
         val: i64,
     ) -> Result<(), PreparedStatementError> {
-        if ffi::duckdb_bind_int64(*self.handle, param_idx, val) != DuckDBSuccess {
+        if ffi::duckdb_bind_int64(self.handle, param_idx, val) != DuckDBSuccess {
             return Err(PreparedStatementError::BindError);
         }
         Ok(())
@@ -145,7 +153,7 @@ impl PreparedStatement {
         param_idx: u64,
         val: u8,
     ) -> Result<(), PreparedStatementError> {
-        if ffi::duckdb_bind_uint8(*self.handle, param_idx, val) != DuckDBSuccess {
+        if ffi::duckdb_bind_uint8(self.handle, param_idx, val) != DuckDBSuccess {
             return Err(PreparedStatementError::BindError);
         }
         Ok(())
@@ -155,7 +163,7 @@ impl PreparedStatement {
         param_idx: u64,
         val: u16,
     ) -> Result<(), PreparedStatementError> {
-        if ffi::duckdb_bind_uint16(*self.handle, param_idx, val) != DuckDBSuccess {
+        if ffi::duckdb_bind_uint16(self.handle, param_idx, val) != DuckDBSuccess {
             return Err(PreparedStatementError::BindError);
         }
         Ok(())
@@ -165,7 +173,7 @@ impl PreparedStatement {
         param_idx: u64,
         val: u32,
     ) -> Result<(), PreparedStatementError> {
-        if ffi::duckdb_bind_uint32(*self.handle, param_idx, val) != DuckDBSuccess {
+        if ffi::duckdb_bind_uint32(self.handle, param_idx, val) != DuckDBSuccess {
             return Err(PreparedStatementError::BindError);
         }
         Ok(())
@@ -175,7 +183,7 @@ impl PreparedStatement {
         param_idx: u64,
         val: u64,
     ) -> Result<(), PreparedStatementError> {
-        if ffi::duckdb_bind_uint64(*self.handle, param_idx, val) != DuckDBSuccess {
+        if ffi::duckdb_bind_uint64(self.handle, param_idx, val) != DuckDBSuccess {
             return Err(PreparedStatementError::BindError);
         }
         Ok(())
@@ -185,7 +193,7 @@ impl PreparedStatement {
         param_idx: u64,
         val: f32,
     ) -> Result<(), PreparedStatementError> {
-        if ffi::duckdb_bind_float(*self.handle, param_idx, val) != DuckDBSuccess {
+        if ffi::duckdb_bind_float(self.handle, param_idx, val) != DuckDBSuccess {
             return Err(PreparedStatementError::BindError);
         }
         Ok(())
@@ -195,7 +203,7 @@ impl PreparedStatement {
         param_idx: u64,
         val: f64,
     ) -> Result<(), PreparedStatementError> {
-        if ffi::duckdb_bind_double(*self.handle, param_idx, val) != DuckDBSuccess {
+        if ffi::duckdb_bind_double(self.handle, param_idx, val) != DuckDBSuccess {
             return Err(PreparedStatementError::BindError);
         }
         Ok(())
@@ -233,7 +241,7 @@ impl PreparedStatement {
         param_idx: u64,
         val: *const c_char,
     ) -> Result<(), PreparedStatementError> {
-        if ffi::duckdb_bind_varchar(*self.handle, param_idx, val) != DuckDBSuccess {
+        if ffi::duckdb_bind_varchar(self.handle, param_idx, val) != DuckDBSuccess {
             return Err(PreparedStatementError::BindError);
         }
         Ok(())
@@ -244,7 +252,7 @@ impl PreparedStatement {
         val: *const c_char,
         length: u64,
     ) -> Result<(), PreparedStatementError> {
-        if ffi::duckdb_bind_varchar_length(*self.handle, param_idx, val, length) != DuckDBSuccess {
+        if ffi::duckdb_bind_varchar_length(self.handle, param_idx, val, length) != DuckDBSuccess {
             return Err(PreparedStatementError::BindError);
         }
         Ok(())
@@ -255,7 +263,7 @@ impl PreparedStatement {
         data: &[u8],
     ) -> Result<(), PreparedStatementError> {
         if ffi::duckdb_bind_blob(
-            *self.handle,
+            self.handle,
             param_idx,
             data.as_ptr() as *const c_void,
             data.len() as u64,
@@ -266,19 +274,19 @@ impl PreparedStatement {
         Ok(())
     }
     pub unsafe fn bind_null_unchecked(&self, param_idx: u64) -> Result<(), PreparedStatementError> {
-        if ffi::duckdb_bind_null(*self.handle, param_idx) != DuckDBSuccess {
+        if ffi::duckdb_bind_null(self.handle, param_idx) != DuckDBSuccess {
             return Err(PreparedStatementError::BindError);
         }
         Ok(())
     }
-    pub fn execute(self: &Arc<Self>) -> Result<Arc<QueryResult>, PreparedStatementError> {
+    pub fn execute(self: &Arc<Self>) -> Result<QueryResult, PreparedStatementError> {
         unsafe {
             let mut out_result = std::mem::zeroed();
-            if ffi::duckdb_execute_prepared(*self.handle, &mut out_result) != DuckDBSuccess {
+            if ffi::duckdb_execute_prepared(self.handle, &mut out_result) != DuckDBSuccess {
                 ffi::duckdb_destroy_result(&mut out_result);
                 return Err(PreparedStatementError::ExecuteError);
             }
-            Ok(QueryResult::from_raw_statement(out_result, self.clone()))
+            Ok(QueryResultHandle::from_raw_statement(out_result, self.clone()).into())
         }
     }
     pub fn execute_arrow(&self) {
@@ -290,14 +298,14 @@ impl Deref for PreparedStatementHandle {
     type Target = ffi::duckdb_prepared_statement;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.handle
     }
 }
 
 impl Drop for PreparedStatementHandle {
     fn drop(&mut self) {
         unsafe {
-            ffi::duckdb_destroy_prepare(&mut self.0);
+            ffi::duckdb_destroy_prepare(&mut self.handle);
         }
     }
 }

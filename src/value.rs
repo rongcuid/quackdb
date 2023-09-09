@@ -1,27 +1,27 @@
 use std::{
-    ffi::{c_char, c_void, CStr, CString, NulError},
+    ffi::{c_char, c_void, CStr},
     ops::Deref,
 };
 
-use crate::{
-    error::{DbResult, Error},
-    ffi,
-};
+use crate::ffi;
 
 #[derive(Debug)]
 pub struct Value {
-    handle: ValueHandle,
+    pub handle: ValueHandle,
 }
 
 #[derive(Debug)]
 pub struct ValueHandle(ffi::duckdb_value);
 
-impl Value {
-    pub fn from_handle(handle: ValueHandle) -> Self {
-        Self { handle }
+impl From<ValueHandle> for Value {
+    fn from(value: ValueHandle) -> Self {
+        Self { handle: value }
     }
+}
+
+impl Value {
     pub unsafe fn from_raw(raw: ffi::duckdb_value) -> Self {
-        Self::from_handle(ValueHandle(raw))
+        ValueHandle(raw).into()
     }
 }
 
