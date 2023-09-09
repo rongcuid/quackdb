@@ -103,6 +103,9 @@ impl VectorHandle {
             _parent: Some(self.clone()),
         })
     }
+    pub fn size(&self) -> u64 {
+        unsafe { ffi::duckdb_vector_size() }
+    }
 }
 
 impl Deref for ValidityHandle {

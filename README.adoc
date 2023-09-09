@@ -2,26 +2,28 @@
 
 == TODO
 
-- [x] Move handles to an internal module
-- [x] Make sure internal module do not reference higher level types
-- [ ] Document low level interface
--- [x] Database
--- [x] Connection
--- [x] Query results
--- [x] Data Chunks
--- [x] Vectors
--- [x] Validity
--- [x] Statements
--- [x] Values
-- [ ] Implement high level interface
--- [x] Database
--- [x] Connection
--- [ ] Query results
---- [x] Chunks, columns, and rows
---- [ ] Values
--- [ ] Data Chunks
---- [x] Most other functions
---- [ ] Set size
--- [ ] Vectors
--- [ ] Statements
--- [ ] Values
+* [x] Move handles to an internal module
+* [x] Make sure internal module do not reference higher level types
+* [ ] Document low level interface
+** [x] Database
+** [x] Connection
+** [x] Query results
+** [x] Data Chunks
+** [x] Vectors
+** [x] Validity
+** [x] Statements
+** [x] Values
+* [ ] Implement high level interface
+** [x] Database
+** [x] Connection
+** [ ] Query results
+*** [x] Chunks, columns, and rows
+*** [ ] Values
+** [ ] Data Chunks
+*** [x] Most other functions
+*** [ ] Set size
+** [ ] Vectors
+*** [ ] Child/Set-size/Reserve/...
+*** [ ] Other functions
+** [ ] Statements
+** [ ] Values

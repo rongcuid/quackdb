@@ -28,9 +28,7 @@ impl TryFrom<TypeId> for LogicalType {
 
 #[derive(Debug)]
 pub enum LogicalKind {
-    Simple {
-        type_: TypeId,
-    },
+    Simple(TypeId),
     Decimal {
         width: u8,
         scale: u8,
@@ -105,7 +103,7 @@ impl TryFrom<&LogicalTypeHandle> for LogicalKind {
                     }
                     Self::Union { members }
                 }
-                ty => Self::Simple { type_: ty },
+                ty => Self::Simple(ty),
             })
         }
     }
