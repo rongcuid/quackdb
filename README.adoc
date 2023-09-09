@@ -8,8 +8,9 @@
 -- [x] Database
 -- [x] Connection
 -- [x] Query results
--- [ ] Data Chunks
+-- [x] Data Chunks
 -- [ ] Vectors
+-- [ ] Validity
 -- [ ] Statements
 -- [ ] Values
 - [ ] Implement high level interface
