@@ -7,7 +7,7 @@
 - [ ] Implement and document low level interface
 -- [x] Database
 -- [x] Connection
--- [ ] Query results
+-- [x] Query results
 -- [ ] Data Chunks
 -- [ ] Vectors
 -- [ ] Statements

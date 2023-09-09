@@ -36,7 +36,7 @@ impl Deref for QueryResultHandle {
 impl Drop for QueryResultHandle {
     fn drop(&mut self) {
         unsafe {
-            ffi::duckdb_destroy_result(&mut self.handle);
+            self.destroy();
         }
     }
 }
@@ -60,10 +60,19 @@ impl QueryResultHandle {
             _parent: QueryParent::Statement(statement),
         })
     }
+    /// # Safety
+    /// Destroys without considering usage. Normally you should let Rust manage this.
+    pub unsafe fn destroy(&mut self) {
+        ffi::duckdb_destroy_result(&mut self.handle);
+    }
+    /// # Safety
+    /// `chunk_index` must be within valid range.
     pub unsafe fn chunk(&self, chunk_index: u64) -> Arc<DataChunkHandle> {
         let c = ffi::duckdb_result_get_chunk(self.handle, chunk_index);
         DataChunkHandle::from_raw(c)
     }
+    /// # Safety
+    /// `col` must be within valid range.
     pub unsafe fn column_name(&self, col: u64) -> Option<String> {
         let p: *const c_char = ffi::duckdb_column_name(
             &self.handle as *const ffi::duckdb_result as *mut ffi::duckdb_result,
@@ -73,6 +82,8 @@ impl QueryResultHandle {
         let cstr = CStr::from_ptr(nn.as_ptr());
         Some(cstr.to_string_lossy().to_owned().to_string())
     }
+    /// # Safety
+    /// `col` must be within valid range.
     pub unsafe fn column_type(&self, col: u64) -> TypeId {
         TypeId::from_raw(ffi::duckdb_column_type(
             &self.handle as *const ffi::duckdb_result as *mut ffi::duckdb_result,
@@ -80,6 +91,8 @@ impl QueryResultHandle {
         ))
         .expect("invalid duckdb type")
     }
+    /// # Safety
+    /// `col` must be within valid range.
     pub unsafe fn column_logical_type(&self, col: u64) -> LogicalTypeHandle {
         LogicalTypeHandle::from_raw(ffi::duckdb_column_logical_type(
             &self.handle as *const ffi::duckdb_result as *mut ffi::duckdb_result,
@@ -106,5 +119,13 @@ impl QueryResultHandle {
                 &self.handle as *const ffi::duckdb_result as *mut ffi::duckdb_result,
             )
         }
+    }
+    /// # Safety
+    /// Does not check if there is actually an error
+    pub unsafe fn error(&self) -> String {
+        let err = ffi::duckdb_result_error(
+            &self.handle as *const ffi::duckdb_result as *mut ffi::duckdb_result,
+        );
+        CStr::from_ptr(err).to_string_lossy().into_owned()
     }
 }

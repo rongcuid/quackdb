@@ -29,13 +29,11 @@ impl ConnectionHandle {
     ) -> Result<Arc<QueryResultHandle>, String> {
         let mut result: ffi::duckdb_result = std::mem::zeroed();
         let r = ffi::duckdb_query(self.handle, sql, &mut result);
+        let h = QueryResultHandle::from_raw_connection(result, self.clone());
         if r != ffi::DuckDBSuccess {
-            let err = ffi::duckdb_result_error(&mut result);
-            let err = CStr::from_ptr(err).to_string_lossy().to_owned().to_string();
-            ffi::duckdb_destroy_result(&mut result);
-            return Err(err);
+            return Err(h.error());
         }
-        Ok(QueryResultHandle::from_raw_connection(result, self.clone()))
+        Ok(h)
     }
     /// # Safety
     /// `query` must be null-terminated
