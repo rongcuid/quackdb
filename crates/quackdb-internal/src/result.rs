@@ -42,15 +42,19 @@ impl Drop for QueryResultHandle {
 }
 
 impl QueryResultHandle {
+    /// # Safety
+    /// Takes ownership
     pub unsafe fn from_raw_connection(
         handle: ffi::duckdb_result,
         connection: Arc<ConnectionHandle>,
     ) -> Arc<Self> {
         Arc::new(Self {
-            handle: handle,
+            handle,
             _parent: QueryParent::Connection(connection),
         })
     }
+    /// # Safety
+    /// Takes ownership
     pub unsafe fn from_raw_statement(
         handle: ffi::duckdb_result,
         statement: Arc<PreparedStatementHandle>,

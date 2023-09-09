@@ -15,6 +15,8 @@ pub struct ConnectionHandle {
 }
 
 impl ConnectionHandle {
+    /// # Safety
+    /// Takes ownership
     pub unsafe fn from_raw(raw: ffi::duckdb_connection, parent: Arc<DatabaseHandle>) -> Arc<Self> {
         Arc::new(Self {
             handle: raw,

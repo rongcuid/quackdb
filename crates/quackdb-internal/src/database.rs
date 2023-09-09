@@ -11,6 +11,8 @@ use crate::{config::ConfigHandle, connection::ConnectionHandle, ffi};
 pub struct DatabaseHandle(ffi::duckdb_database);
 
 impl DatabaseHandle {
+    /// # Safety
+    /// Takes ownership
     pub unsafe fn from_raw(raw: ffi::duckdb_database) -> Arc<Self> {
         Arc::new(Self(raw))
     }
