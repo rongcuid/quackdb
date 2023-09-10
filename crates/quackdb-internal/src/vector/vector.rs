@@ -62,15 +62,6 @@ impl VectorHandle {
             parent: VectorParent::StructVector(parent),
         })
     }
-    pub fn size(&self) -> u64 {
-        unsafe {
-            match &self.parent {
-                VectorParent::DataChunk(d) => d.size(),
-                VectorParent::ListVector(v) => v.list_size(),
-                VectorParent::StructVector(_) => self.column_type().struct_type_child_count(),
-            }
-        }
-    }
     pub fn column_type(&self) -> LogicalTypeHandle {
         unsafe { LogicalTypeHandle::from_raw(ffi::duckdb_vector_get_column_type(self.handle)) }
     }
