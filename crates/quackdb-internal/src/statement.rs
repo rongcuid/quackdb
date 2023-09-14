@@ -1,8 +1,4 @@
-use std::{
-    ffi::{c_char, c_void},
-    ops::Deref,
-    sync::Arc,
-};
+use std::{ffi::CStr, ops::Deref, sync::Arc};
 
 use crate::{connection::ConnectionHandle, ffi, query_result::QueryResultHandle, types::TypeId};
 
@@ -164,19 +160,15 @@ impl PreparedStatementHandle {
     pub unsafe fn bind_interval(&self, param_idx: u64, val: i64) -> Result<(), ()> {
         todo!()
     }
-    pub unsafe fn bind_varchar(&self, param_idx: u64, val: *const c_char) -> Result<(), ()> {
-        if ffi::duckdb_bind_varchar(self.handle, param_idx, val) != ffi::DuckDBSuccess {
+    pub unsafe fn bind_varchar(&self, param_idx: u64, val: &CStr) -> Result<(), ()> {
+        if ffi::duckdb_bind_varchar(self.handle, param_idx, val.as_ptr()) != ffi::DuckDBSuccess {
             return Err(());
         }
         Ok(())
     }
-    pub unsafe fn bind_varchar_length(
-        &self,
-        param_idx: u64,
-        val: *const c_char,
-        length: u64,
-    ) -> Result<(), ()> {
-        if ffi::duckdb_bind_varchar_length(self.handle, param_idx, val, length)
+    pub unsafe fn bind_varchar_str(&self, param_idx: u64, val: &str) -> Result<(), ()> {
+        let b = val.as_bytes();
+        if ffi::duckdb_bind_varchar_length(self.handle, param_idx, b.as_ptr() as _, b.len() as u64)
             != ffi::DuckDBSuccess
         {
             return Err(());
@@ -187,7 +179,7 @@ impl PreparedStatementHandle {
         if ffi::duckdb_bind_blob(
             self.handle,
             param_idx,
-            data.as_ptr() as *const c_void,
+            data.as_ptr() as _,
             data.len() as u64,
         ) != ffi::DuckDBSuccess
         {

@@ -1,5 +1,5 @@
 use std::{
-    ffi::{c_char, c_void, CStr},
+    ffi::{c_void, CStr},
     ops::Deref,
 };
 
@@ -23,10 +23,8 @@ impl Drop for ValueHandle {
 }
 
 impl ValueHandle {
-    /// # Safety
-    /// `text` must be null-terminated
-    pub unsafe fn create_varchar(text: *const c_char) -> Self {
-        Self(ffi::duckdb_create_varchar(text))
+    pub fn create_varchar(text: &CStr) -> Self {
+        Self(unsafe { ffi::duckdb_create_varchar(text.as_ptr()) })
     }
     pub fn create_i64(val: i64) -> Self {
         unsafe { Self(ffi::duckdb_create_int64(val)) }

@@ -1,8 +1,4 @@
-use std::{
-    collections::BTreeMap,
-    ffi::{c_char, c_void, CStr},
-    ops::Deref,
-};
+use std::{ffi::CStr, ops::Deref};
 
 use crate::ffi;
 
@@ -41,7 +37,7 @@ impl LogicalTypeHandle {
     pub unsafe fn enum_dictionary_value(&self, index: u64) -> String {
         let p = ffi::duckdb_enum_dictionary_value(self.0, index);
         let name = CStr::from_ptr(p).to_string_lossy().into_owned();
-        ffi::duckdb_free(p as *mut c_void);
+        ffi::duckdb_free(p as _);
         name
     }
     pub unsafe fn list_type_child_type(&self) -> LogicalTypeHandle {
@@ -59,7 +55,7 @@ impl LogicalTypeHandle {
     pub unsafe fn struct_type_child_name(&self, index: u64) -> String {
         let p = ffi::duckdb_struct_type_child_name(self.0, index);
         let name = CStr::from_ptr(p).to_string_lossy().into_owned();
-        ffi::duckdb_free(p as *mut c_void);
+        ffi::duckdb_free(p as _);
         name
     }
     pub unsafe fn struct_type_child_type(&self, index: u64) -> LogicalTypeHandle {
@@ -71,7 +67,7 @@ impl LogicalTypeHandle {
     pub unsafe fn union_type_member_name(&self, index: u64) -> String {
         let p = ffi::duckdb_union_type_member_name(self.0, index);
         let name = CStr::from_ptr(p).to_string_lossy().into_owned();
-        ffi::duckdb_free(p as *mut c_void);
+        ffi::duckdb_free(p as _);
         name
     }
     pub unsafe fn union_type_member_type(&self, index: u64) -> LogicalTypeHandle {

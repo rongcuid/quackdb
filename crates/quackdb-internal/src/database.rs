@@ -1,9 +1,4 @@
-use std::{
-    ffi::{c_char, CStr},
-    ops::Deref,
-    ptr,
-    sync::Arc,
-};
+use std::{ffi::CStr, ops::Deref, ptr, sync::Arc};
 
 use crate::{config::ConfigHandle, connection::ConnectionHandle, ffi};
 
@@ -16,26 +11,22 @@ impl DatabaseHandle {
     pub unsafe fn from_raw(raw: ffi::duckdb_database) -> Arc<Self> {
         Arc::new(Self(raw))
     }
-    /// # Safety
-    /// `path` must be null-terminated
-    pub unsafe fn open(path: *const c_char) -> Result<Arc<Self>, String> {
+    pub unsafe fn open(path: &CStr) -> Result<Arc<Self>, String> {
         Self::open_ext(path, &ConfigHandle::from_raw(ptr::null_mut()))
     }
-    /// # Safety
-    /// `path` must be null-terminated
-    pub unsafe fn open_ext(
-        path: *const c_char,
-        config: &ConfigHandle,
-    ) -> Result<Arc<Self>, String> {
-        let mut db: ffi::duckdb_database = ptr::null_mut();
-        let mut err: *mut c_char = ptr::null_mut();
-        let r = ffi::duckdb_open_ext(path, &mut db, **config, &mut err);
-        if r != ffi::DuckDBSuccess {
-            let err_cstr = CStr::from_ptr(err);
-            let err_str = err_cstr.to_string_lossy().to_string();
-            return Err(err_str);
+    pub fn open_ext(path: &CStr, config: &ConfigHandle) -> Result<Arc<Self>, String> {
+        unsafe {
+            let mut db: ffi::duckdb_database = ptr::null_mut();
+            let mut err = ptr::null_mut();
+            let r = ffi::duckdb_open_ext(path.as_ptr(), &mut db, **config, &mut err);
+            if r != ffi::DuckDBSuccess {
+                let err_cstr = CStr::from_ptr(err);
+                let err_str = err_cstr.to_string_lossy().to_string();
+                ffi::duckdb_free(err as _);
+                return Err(err_str);
+            }
+            Ok(Self::from_raw(db))
         }
-        Ok(Self::from_raw(db))
     }
 
     pub fn connect(self: &Arc<Self>) -> Result<Arc<ConnectionHandle>, ()> {

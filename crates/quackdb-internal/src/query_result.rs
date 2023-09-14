@@ -1,5 +1,5 @@
 use std::{
-    ffi::{c_char, c_void, CStr, CString},
+    ffi::{c_void, CStr},
     ops::Deref,
     ptr::NonNull,
     sync::Arc,
@@ -74,8 +74,8 @@ impl QueryResultHandle {
     /// # Safety
     /// `col` must be within valid range.
     pub unsafe fn column_name(&self, col: u64) -> Option<String> {
-        let p: *const c_char = ffi::duckdb_column_name(self.handle_mut(), col);
-        let nn = NonNull::new(p as *mut c_char)?;
+        let p = ffi::duckdb_column_name(self.handle_mut(), col);
+        let nn = NonNull::new(p as _)?;
         let cstr = CStr::from_ptr(nn.as_ptr());
         Some(cstr.to_string_lossy().to_owned().to_string())
     }
