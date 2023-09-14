@@ -7,7 +7,6 @@ use std::{
 
 use crate::{
     connection::ConnectionHandle,
-    data_chunks::DataChunkHandle,
     ffi,
     statement::PreparedStatementHandle,
     types::{LogicalTypeHandle, TypeId},
@@ -68,15 +67,6 @@ impl QueryResultHandle {
     /// Destroys without considering usage. Normally you should let Rust manage this.
     pub unsafe fn destroy(&mut self) {
         ffi::duckdb_destroy_result(&mut self.handle);
-    }
-    /// # Safety
-    /// `chunk_index` must be within valid range.
-    pub unsafe fn chunk(&self, chunk_index: u64) -> Arc<DataChunkHandle> {
-        let c = ffi::duckdb_result_get_chunk(self.handle, chunk_index);
-        DataChunkHandle::from_raw(c)
-    }
-    pub fn chunk_count(&self) -> u64 {
-        unsafe { ffi::duckdb_result_chunk_count(self.handle) }
     }
     pub fn is_streaming(&self) -> bool {
         unsafe { ffi::duckdb_result_is_streaming(self.handle) }
