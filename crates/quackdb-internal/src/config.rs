@@ -1,10 +1,4 @@
-use std::{
-    ffi::{c_char, CStr, CString},
-    ops::Deref,
-    ptr,
-};
-
-use cstr::cstr;
+use std::{ffi::CStr, ops::Deref, ptr};
 
 use crate::ffi;
 
