@@ -1,25 +1,9 @@
-use std::{
-    ffi::{c_char, CString},
-    ops::Deref,
-    ptr,
-};
-
-use cstr::cstr;
+use std::{ffi::CStr, ops::Deref, ptr};
 
 use crate::ffi;
 
-/// duckdb configuration
-/// Refer to https://github.com/duckdb/duckdb/blob/master/src/main/config.cpp
-/// Adapted from `duckdb-rs` crate
-/// TODO: support everything in the API
 #[derive(Debug)]
 pub struct ConfigHandle(ffi::duckdb_config);
-
-impl Default for ConfigHandle {
-    fn default() -> Self {
-        Self(ptr::null_mut())
-    }
-}
 
 impl Deref for ConfigHandle {
     type Target = ffi::duckdb_config;
@@ -39,12 +23,13 @@ impl ConfigHandle {
             Ok(Self::from_raw(config))
         }
     }
+    /// # Safety
+    /// Takes ownership
     pub unsafe fn from_raw(raw: ffi::duckdb_config) -> Self {
         Self(raw)
     }
-
-    pub unsafe fn set(&mut self, key: *const c_char, value: *const c_char) -> Result<(), ()> {
-        let state = unsafe { ffi::duckdb_set_config(self.0, key, value) };
+    pub fn set(&self, key: &CStr, value: &CStr) -> Result<(), ()> {
+        let state = unsafe { ffi::duckdb_set_config(self.0, key.as_ptr(), value.as_ptr()) };
         if state != ffi::DuckDBSuccess {
             return Err(());
         }

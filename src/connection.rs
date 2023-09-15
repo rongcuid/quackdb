@@ -36,11 +36,10 @@ impl Connection {
 
     pub fn query(&self, sql: &str) -> DbResult<QueryResult, ConnectionError> {
         let cstr = CString::new(sql)?;
-        let p = cstr.as_ptr();
         unsafe {
             let result = self
                 .handle
-                .query(p)
+                .query(&cstr)
                 .map_err(ConnectionError::QueryError)
                 .map(QueryResult::from);
             Ok(result)
@@ -49,11 +48,10 @@ impl Connection {
 
     pub fn prepare(&self, query: &str) -> DbResult<PreparedStatement, ConnectionError> {
         let cstr = CString::new(query)?;
-        let p = cstr.as_ptr();
         unsafe {
             Ok(self
                 .handle
-                .prepare(p)
+                .prepare(&cstr)
                 .map_err(ConnectionError::PrepareError)
                 .map(PreparedStatement::from))
         }

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use quackdb_internal::query_result::QueryResultHandle;
 
-use crate::{data_chunks::DataChunk, types::LogicalType};
+use crate::types::LogicalType;
 
 #[derive(Debug)]
 pub struct QueryResult {
@@ -16,14 +16,6 @@ impl From<Arc<QueryResultHandle>> for QueryResult {
 }
 
 impl QueryResult {
-    pub fn chunk(&self, chunk_index: u64) -> DataChunk {
-        let chunk_count = self.handle.chunk_count();
-        assert!(chunk_index < chunk_count);
-        unsafe { self.handle.chunk(chunk_index).into() }
-    }
-    pub fn chunk_count(&self) -> u64 {
-        self.handle.chunk_count()
-    }
     pub fn is_streaming(&self) -> bool {
         self.handle.is_streaming()
     }

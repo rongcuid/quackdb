@@ -8,14 +8,16 @@ edition = "2021"
 [dependencies]
 thiserror = "1"
 strum = { version = "0.25", features = ["derive"] }
+paste = "1"
 
 libduckdb-sys = "0.8.1"
 
 cstr = "0.2"
-arrow = "46"
+# arrow = { version = "46", features = ["ffi"] }
 parquet = "46"
-chrono = "^0.4.22"
+time = "^0.3"
 serde = "1"
 serde_json = "1"
 uuid = "1"
 regex = "1"
+rust_decimal = "1"

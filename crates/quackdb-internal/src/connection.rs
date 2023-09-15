@@ -1,8 +1,4 @@
-use std::{
-    ffi::{c_char, CStr},
-    ops::Deref,
-    sync::Arc,
-};
+use std::{ffi::CStr, ops::Deref, sync::Arc};
 
 use crate::{
     database::DatabaseHandle, ffi, query_result::QueryResultHandle,
@@ -24,35 +20,29 @@ impl ConnectionHandle {
             _parent: parent,
         })
     }
-    /// # Safety
-    /// `sql` must be null-terminated
-    pub unsafe fn query(
-        self: &Arc<Self>,
-        sql: *const c_char,
-    ) -> Result<Arc<QueryResultHandle>, String> {
-        let mut result: ffi::duckdb_result = std::mem::zeroed();
-        let r = ffi::duckdb_query(self.handle, sql, &mut result);
-        let h = QueryResultHandle::from_raw_connection(result, self.clone());
-        if r != ffi::DuckDBSuccess {
-            return Err(h.error());
+    pub fn query(self: &Arc<Self>, sql: &CStr) -> Result<Arc<QueryResultHandle>, String> {
+        unsafe {
+            let mut result: ffi::duckdb_result = std::mem::zeroed();
+            let r = ffi::duckdb_query(self.handle, sql.as_ptr(), &mut result);
+            let h = QueryResultHandle::from_raw_connection(result, self.clone());
+            if r != ffi::DuckDBSuccess {
+                return Err(h.error());
+            }
+            Ok(h)
         }
-        Ok(h)
     }
-    /// # Safety
-    /// `query` must be null-terminated
-    pub unsafe fn prepare(
-        self: &Arc<Self>,
-        query: *const c_char,
-    ) -> Result<Arc<PreparedStatementHandle>, String> {
-        let mut prepare: ffi::duckdb_prepared_statement = std::mem::zeroed();
-        let res = ffi::duckdb_prepare(self.handle, query, &mut prepare);
-        if res != ffi::DuckDBSuccess {
-            let err = ffi::duckdb_prepare_error(prepare);
-            let err = CStr::from_ptr(err).to_string_lossy().to_owned().to_string();
-            ffi::duckdb_destroy_prepare(&mut prepare);
-            return Err(err);
+    pub fn prepare(self: &Arc<Self>, query: &CStr) -> Result<Arc<PreparedStatementHandle>, String> {
+        unsafe {
+            let mut prepare: ffi::duckdb_prepared_statement = std::mem::zeroed();
+            let res = ffi::duckdb_prepare(self.handle, query.as_ptr(), &mut prepare);
+            if res != ffi::DuckDBSuccess {
+                let err = ffi::duckdb_prepare_error(prepare);
+                let err = CStr::from_ptr(err).to_string_lossy().to_owned().to_string();
+                ffi::duckdb_destroy_prepare(&mut prepare);
+                return Err(err);
+            }
+            Ok(PreparedStatementHandle::from_raw(prepare, self.clone()))
         }
-        Ok(PreparedStatementHandle::from_raw(prepare, self.clone()))
     }
     /// # Safety
     /// Disconnects without checking usage.

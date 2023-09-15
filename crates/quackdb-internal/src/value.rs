@@ -1,52 +1,218 @@
-use std::{
-    ffi::{c_char, c_void, CStr},
-    ops::Deref,
-};
+use std::ffi::CStr;
 
-use crate::ffi;
+use paste::paste;
+use rust_decimal::Decimal;
+use time::{error::ComponentRange, Date, Duration, PrimitiveDateTime, Time};
+
+use crate::{ffi, query_result::QueryResultHandle, statement::PreparedStatementHandle};
+
+/// Values that can be read from DuckDb results.
+pub unsafe trait FromResult
+where
+    Self: Sized,
+{
+    /// # Safety
+    /// Does not need to check whether the type is correct or whether access is in bounds.
+    unsafe fn from_result_unchecked(res: &QueryResultHandle, col: u64, row: u64) -> Self;
+    /// # Safety
+    /// Does not need to check whether the type is correct or whether access is in bounds.
+    unsafe fn from_result_nullable_unchecked(
+        res: &QueryResultHandle,
+        col: u64,
+        row: u64,
+    ) -> Option<Self> {
+        if res.value_is_null(col, row) {
+            return None;
+        }
+        Some(Self::from_result_unchecked(res, col, row))
+    }
+}
+
+/// Values that can bind to prepared statements
+pub unsafe trait BindParam
+where
+    Self: Sized,
+{
+    /// # Safety
+    /// Does not need to check whether the type is correct or whether index is in bounds.
+    unsafe fn bind_param_unchecked(
+        stmt: &PreparedStatementHandle,
+        param_idx: u64,
+        val: Self,
+    ) -> Result<(), ()>;
+    /// # Safety
+    /// Does not need to check whether the type is correct or whether index is in bounds.
+    unsafe fn bind_param_nullable_unchecked(
+        stmt: &PreparedStatementHandle,
+        param_idx: u64,
+        val: Option<Self>,
+    ) -> Result<(), ()> {
+        match val {
+            Some(val) => Self::bind_param_unchecked(stmt, param_idx, val),
+            None => stmt.bind_null(param_idx),
+        }
+    }
+}
 
 #[derive(Debug)]
-pub struct ValueHandle(ffi::duckdb_value);
+pub struct DuckDbDecimal {
+    pub width: u8,
+    pub decimal: Decimal,
+}
 
-impl Deref for ValueHandle {
-    type Target = ffi::duckdb_value;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+impl From<ffi::duckdb_decimal> for DuckDbDecimal {
+    fn from(value: ffi::duckdb_decimal) -> Self {
+        let mantissa = duckdb_hugeint_to_i128(&value.value);
+        let decimal = Decimal::from_i128_with_scale(mantissa, value.scale as u32);
+        DuckDbDecimal {
+            width: value.width,
+            decimal,
+        }
     }
 }
 
-impl Drop for ValueHandle {
-    fn drop(&mut self) {
-        unsafe { self.destroy() }
+impl From<DuckDbDecimal> for ffi::duckdb_decimal {
+    fn from(value: DuckDbDecimal) -> Self {
+        ffi::duckdb_decimal {
+            width: value.width,
+            scale: value.decimal.scale() as u8,
+            value: i128_to_duckdb_hugeint(value.decimal.mantissa()),
+        }
     }
 }
 
-impl ValueHandle {
-    /// # Safety
-    /// `text` must be null-terminated
-    pub unsafe fn create_varchar(text: *const c_char) -> Self {
-        Self(ffi::duckdb_create_varchar(text))
-    }
-    pub fn create_i64(val: i64) -> Self {
-        unsafe { Self(ffi::duckdb_create_int64(val)) }
-    }
-    /// # Safety
-    /// Does not consider usage. Normally, let `Drop` handle this.
-    pub unsafe fn destroy(&mut self) {
-        ffi::duckdb_destroy_value(&mut self.0);
-    }
-    /// # Safety
-    /// The value must be a varchar value
-    pub unsafe fn varchar(&self) -> String {
-        let p = ffi::duckdb_get_varchar(self.0);
-        let text = CStr::from_ptr(p).to_string_lossy().to_owned().to_string();
-        ffi::duckdb_free(p as *mut c_void);
-        text
-    }
-    /// # Safety
-    /// The value must be an int64 value
-    pub unsafe fn i64(&self) -> i64 {
-        ffi::duckdb_get_int64(self.0)
+pub fn duckdb_hugeint_to_i128(hugeint: &ffi::duckdb_hugeint) -> i128 {
+    (hugeint.upper as i128) << 64 & hugeint.lower as i128
+}
+
+pub fn i128_to_duckdb_hugeint(val: i128) -> ffi::duckdb_hugeint {
+    ffi::duckdb_hugeint {
+        upper: (val >> 64) as i64,
+        lower: val as u64,
     }
 }
+
+pub fn duckdb_date_to_date(date: &ffi::duckdb_date_struct) -> Result<Date, ComponentRange> {
+    Date::from_calendar_date(
+        date.year,
+        (date.month as u8).try_into().expect("month"),
+        date.day as u8,
+    )
+}
+
+pub fn date_to_duckdb_date(date: &Date) -> ffi::duckdb_date_struct {
+    ffi::duckdb_date_struct {
+        year: date.year(),
+        month: u8::from(date.month()) as i8,
+        day: date.day() as i8,
+    }
+}
+
+pub fn duckdb_time_to_time(time: &ffi::duckdb_time_struct) -> Result<Time, ComponentRange> {
+    Time::from_hms_micro(
+        time.hour as u8,
+        time.min as u8,
+        time.sec as u8,
+        time.micros as u32,
+    )
+}
+
+pub fn time_to_duckdb_time(time: &Time) -> ffi::duckdb_time_struct {
+    ffi::duckdb_time_struct {
+        hour: time.hour() as i8,
+        min: time.minute() as i8,
+        sec: time.second() as i8,
+        micros: time.microsecond() as i32,
+    }
+}
+
+pub fn duckdb_timestamp_to_datetime(
+    ts: &ffi::duckdb_timestamp_struct,
+) -> Result<PrimitiveDateTime, ComponentRange> {
+    Ok(PrimitiveDateTime::new(
+        duckdb_date_to_date(&ts.date)?,
+        duckdb_time_to_time(&ts.time)?,
+    ))
+}
+
+pub fn datetime_to_duckdb_timestamp(dt: &PrimitiveDateTime) -> ffi::duckdb_timestamp_struct {
+    ffi::duckdb_timestamp_struct {
+        date: date_to_duckdb_date(&dt.date()),
+        time: time_to_duckdb_time(&dt.time()),
+    }
+}
+
+macro_rules! impl_from_result_for_value {
+    ($ty:ty) => {
+        paste! {
+            impl_from_result_for_value! {$ty, [<value_ $ty>]}
+        }
+    };
+    ($ty:ty, $method:ident) => {
+        unsafe impl FromResult for $ty {
+            unsafe fn from_result_unchecked(res: &QueryResultHandle, col: u64, row: u64) -> Self {
+                res.$method(col, row)
+            }
+        }
+    };
+}
+
+impl_from_result_for_value! {bool}
+impl_from_result_for_value! {i8}
+impl_from_result_for_value! {i16}
+impl_from_result_for_value! {i32}
+impl_from_result_for_value! {i64}
+impl_from_result_for_value! {i128}
+impl_from_result_for_value! {DuckDbDecimal, value_decimal}
+impl_from_result_for_value! {u8}
+impl_from_result_for_value! {u16}
+impl_from_result_for_value! {u32}
+impl_from_result_for_value! {u64}
+impl_from_result_for_value! {f32}
+impl_from_result_for_value! {f64}
+impl_from_result_for_value! {String, value_string}
+impl_from_result_for_value! {Date, value_date}
+impl_from_result_for_value! {Time, value_time}
+impl_from_result_for_value! {PrimitiveDateTime, value_timestamp}
+impl_from_result_for_value! {Duration, value_interval}
+impl_from_result_for_value! {Vec<u8>, value_blob}
+
+macro_rules! impl_bind_param_for_value {
+    ($ty:ty) => {
+        paste! {
+            impl_bind_param_for_value! {$ty, [<bind_ $ty>]}
+        }
+    };
+    ($ty:ty, $method:ident) => {
+        unsafe impl BindParam for $ty {
+            unsafe fn bind_param_unchecked(
+                stmt: &PreparedStatementHandle,
+                param_idx: u64,
+                val: Self,
+            ) -> Result<(), ()> {
+                stmt.$method(param_idx, val)
+            }
+        }
+    };
+}
+
+impl_bind_param_for_value! {bool}
+impl_bind_param_for_value! {i8}
+impl_bind_param_for_value! {i16}
+impl_bind_param_for_value! {i32}
+impl_bind_param_for_value! {i64}
+impl_bind_param_for_value! {i128}
+impl_bind_param_for_value! {DuckDbDecimal, bind_decimal}
+impl_bind_param_for_value! {u8}
+impl_bind_param_for_value! {u16}
+impl_bind_param_for_value! {u32}
+impl_bind_param_for_value! {u64}
+impl_bind_param_for_value! {f32}
+impl_bind_param_for_value! {f64}
+impl_bind_param_for_value! {&CStr, bind_varchar}
+impl_bind_param_for_value! {&str, bind_varchar_str}
+impl_bind_param_for_value! {Date, bind_date}
+impl_bind_param_for_value! {Time, bind_time}
+impl_bind_param_for_value! {PrimitiveDateTime, bind_timestamp}
+impl_bind_param_for_value! {Duration, bind_interval}
+impl_bind_param_for_value! {&[u8], bind_blob}

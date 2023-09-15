@@ -47,7 +47,7 @@ pub enum DefaultNullOrder {
 /// TODO: support everything in the API
 #[derive(Default, Debug)]
 pub struct Config {
-    pub handle: ConfigHandle,
+    pub handle: Option<ConfigHandle>,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -109,21 +109,19 @@ impl Config {
     }
 
     fn set(&mut self, key: &str, value: &str) -> DbResult<(), ConfigError> {
-        if self.handle.is_null() {
+        if self.handle.is_none() {
             if let Ok(config) = ConfigHandle::create() {
-                self.handle = config;
+                self.handle = Some(config);
             } else {
                 return Ok(Err(ConfigError::CreateError));
             }
         }
-        let c_key = CString::new(key)?.as_ptr();
-        let c_value = CString::new(value)?.as_ptr();
-        unsafe {
-            if self.handle.set(c_key, c_value).is_ok() {
-                Ok(Ok(()))
-            } else {
-                Ok(Err(ConfigError::SetError(key.to_owned(), value.to_owned())))
-            }
+        let c_key = CString::new(key)?;
+        let c_value = CString::new(value)?;
+        if self.handle.as_ref().unwrap().set(&c_key, &c_value).is_ok() {
+            Ok(Ok(()))
+        } else {
+            Ok(Err(ConfigError::SetError(key.to_owned(), value.to_owned())))
         }
     }
 }

@@ -4,28 +4,25 @@
 
 * [x] Move handles to an internal module
 * [x] Make sure internal module do not reference higher level types
+* [ ] Proper string type for duckdb: UTF-8, non-null terminated
 * [ ] Document low level interface
 ** [x] Database
 ** [x] Connection
 ** [x] Query results
-** [x] Data Chunks
-** [x] Vectors
-** [x] Validity
 ** [x] Statements
 ** [x] Values
 * [ ] Implement high level interface
 ** [x] Database
 ** [x] Connection
 ** [ ] Query results
-*** [x] Chunks, columns, and rows
 *** [ ] Values
-** [ ] Data Chunks
-*** [x] Most other functions
-*** [ ] Set size
-** [ ] Vectors
-*** [ ] Child/Set-size/Reserve/... types
-*** [x] Struct vector size
-*** [ ] Typed data handle
-*** [x] Other functions
 ** [ ] Statements
 ** [ ] Values
+
+== API Level
+
+The main API is the high level, safe API.
+
+`quackdb-internal` exposes low-level wrapper over types from `libduckdb-sys` with Rust types, but without checks.
+
+Raw handles can be used with FFI functions for lowest-level interaction.
