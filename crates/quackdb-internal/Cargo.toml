@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 thiserror = "1"
 strum = { version = "0.25", features = ["derive"] }
+paste = "1"
 
 libduckdb-sys = "0.8.1"
 

@@ -1,6 +1,12 @@
-use time::{error::ComponentRange, Date, PrimitiveDateTime, Time};
+use paste::paste;
+use rust_decimal::Decimal;
+use time::{error::ComponentRange, Date, Duration, PrimitiveDateTime, Time};
 
-use crate::ffi;
+use crate::{ffi, query_result::QueryResultHandle};
+
+pub unsafe trait FromResult {
+    fn from_result(res: &QueryResultHandle, col: u64, row: u64) -> Self;
+}
 
 pub fn duckdb_hugeint_to_i128(hugeint: &ffi::duckdb_hugeint) -> i128 {
     (hugeint.upper as i128) << 64 & hugeint.lower as i128
@@ -35,3 +41,38 @@ pub fn duckdb_timestamp_to_datetime(
         duckdb_time_to_time(&ts.time)?,
     ))
 }
+
+macro_rules! impl_from_result_for_value {
+    ($ty:ty) => {
+        paste! {
+            impl_from_result_for_value! {$ty, [<value_ $ty>]}
+        }
+    };
+    ($ty:ty, $method:ident) => {
+        unsafe impl FromResult for $ty {
+            fn from_result(res: &QueryResultHandle, col: u64, row: u64) -> Self {
+                unsafe { res.$method(col, row) }
+            }
+        }
+    };
+}
+
+impl_from_result_for_value! {bool}
+impl_from_result_for_value! {i8}
+impl_from_result_for_value! {i16}
+impl_from_result_for_value! {i32}
+impl_from_result_for_value! {i64}
+impl_from_result_for_value! {i128}
+impl_from_result_for_value! {Decimal, value_decimal}
+impl_from_result_for_value! {u8}
+impl_from_result_for_value! {u16}
+impl_from_result_for_value! {u32}
+impl_from_result_for_value! {u64}
+impl_from_result_for_value! {f32}
+impl_from_result_for_value! {f64}
+impl_from_result_for_value! {String, value_string}
+impl_from_result_for_value! {Date, value_date}
+impl_from_result_for_value! {Time, value_time}
+impl_from_result_for_value! {PrimitiveDateTime, value_timestamp}
+impl_from_result_for_value! {Duration, value_interval}
+impl_from_result_for_value! {Vec<u8>, value_blob}

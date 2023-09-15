@@ -142,7 +142,7 @@ impl QueryResultHandle {
     }
     /// # Safety
     /// Caller ensures type is correct and col and row are in bound
-    pub unsafe fn value_hugeint(&self, col: u64, row: u64) -> i128 {
+    pub unsafe fn value_i128(&self, col: u64, row: u64) -> i128 {
         let hugeint = ffi::duckdb_value_hugeint(self.handle_mut(), col, row);
         duckdb_hugeint_to_i128(&hugeint)
     }
@@ -165,8 +165,8 @@ impl QueryResultHandle {
     }
     /// # Safety
     /// Caller ensures type is correct and col and row are in bound
-    pub unsafe fn value_u32(&self, col: u64, row: u64) -> i32 {
-        ffi::duckdb_value_int32(self.handle_mut(), col, row)
+    pub unsafe fn value_u32(&self, col: u64, row: u64) -> u32 {
+        ffi::duckdb_value_uint32(self.handle_mut(), col, row)
     }
     /// # Safety
     /// Caller ensures type is correct and col and row are in bound
