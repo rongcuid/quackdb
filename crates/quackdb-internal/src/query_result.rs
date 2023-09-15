@@ -15,7 +15,7 @@ use crate::{
     types::{LogicalTypeHandle, TypeId},
     value::{
         duckdb_date_to_date, duckdb_hugeint_to_i128, duckdb_time_to_time,
-        duckdb_timestamp_to_datetime,
+        duckdb_timestamp_to_datetime, DuckDbDecimal,
     },
 };
 
@@ -148,10 +148,8 @@ impl QueryResultHandle {
     }
     /// # Safety
     /// Caller ensures type is correct and col and row are in bound
-    pub unsafe fn value_decimal(&self, col: u64, row: u64) -> Decimal {
-        let decimal = ffi::duckdb_value_decimal(self.handle_mut(), col, row);
-        let value = duckdb_hugeint_to_i128(&decimal.value);
-        Decimal::from_i128_with_scale(value, decimal.scale as u32)
+    pub unsafe fn value_decimal(&self, col: u64, row: u64) -> DuckDbDecimal {
+        ffi::duckdb_value_decimal(self.handle_mut(), col, row).into()
     }
     /// # Safety
     /// Caller ensures type is correct and col and row are in bound
