@@ -1,5 +1,6 @@
 use std::{ffi::CStr, ops::Deref, sync::Arc};
 
+use parquet::schema;
 use rust_decimal::Decimal;
 use time::{Date, Duration, PrimitiveDateTime, Time};
 
@@ -224,8 +225,5 @@ impl PreparedStatementHandle {
             }
             Ok(QueryResultHandle::from_raw_statement(out_result, self.clone()).into())
         }
-    }
-    pub fn execute_arrow(&self) {
-        todo!()
     }
 }
