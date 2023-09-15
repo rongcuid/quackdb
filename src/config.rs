@@ -118,12 +118,10 @@ impl Config {
         }
         let c_key = CString::new(key)?;
         let c_value = CString::new(value)?;
-        unsafe {
-            if self.handle.unwrap().set(&c_key, &c_value).is_ok() {
-                Ok(Ok(()))
-            } else {
-                Ok(Err(ConfigError::SetError(key.to_owned(), value.to_owned())))
-            }
+        if self.handle.as_ref().unwrap().set(&c_key, &c_value).is_ok() {
+            Ok(Ok(()))
+        } else {
+            Ok(Err(ConfigError::SetError(key.to_owned(), value.to_owned())))
         }
     }
 }

@@ -11,14 +11,19 @@ impl DatabaseHandle {
     pub unsafe fn from_raw(raw: ffi::duckdb_database) -> Arc<Self> {
         Arc::new(Self(raw))
     }
-    pub unsafe fn open(path: &CStr) -> Result<Arc<Self>, String> {
-        Self::open_ext(path, &ConfigHandle::from_raw(ptr::null_mut()))
+    pub unsafe fn open(path: Option<&CStr>) -> Result<Arc<Self>, String> {
+        Self::open_ext(path, None)
     }
-    pub fn open_ext(path: &CStr, config: &ConfigHandle) -> Result<Arc<Self>, String> {
+    pub fn open_ext(
+        path: Option<&CStr>,
+        config: Option<&ConfigHandle>,
+    ) -> Result<Arc<Self>, String> {
         unsafe {
             let mut db: ffi::duckdb_database = ptr::null_mut();
             let mut err = ptr::null_mut();
-            let r = ffi::duckdb_open_ext(path.as_ptr(), &mut db, **config, &mut err);
+            let path = path.map(|p| p.as_ptr()).unwrap_or(ptr::null());
+            let config = config.map(|c| **c).unwrap_or(ptr::null_mut());
+            let r = ffi::duckdb_open_ext(path, &mut db, config, &mut err);
             if r != ffi::DuckDBSuccess {
                 let err_cstr = CStr::from_ptr(err);
                 let err_str = err_cstr.to_string_lossy().to_string();

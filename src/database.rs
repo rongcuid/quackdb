@@ -2,7 +2,12 @@ use std::{path::Path, sync::Arc};
 
 use quackdb_internal::database::DatabaseHandle;
 
-use crate::{config::Config, connection::Connection, cutils::option_path_to_ptr, error::*};
+use crate::{
+    config::Config,
+    connection::Connection,
+    cutils::{option_path_to_cstring, option_path_to_ptr},
+    error::*,
+};
 
 #[derive(Debug)]
 pub struct Database {
@@ -31,21 +36,19 @@ impl Database {
 
     /// Extended open
     pub fn open_ext(path: Option<&Path>, config: &Config) -> DbResult<Database, DatabaseError> {
-        let p_path = option_path_to_ptr(path)?;
-        unsafe {
-            Ok(DatabaseHandle::open_ext(p_path, &config.handle)
+        let c_path = option_path_to_cstring(path)?;
+        Ok(
+            DatabaseHandle::open_ext(c_path.as_deref(), config.handle.as_ref())
                 .map_err(DatabaseError::OpenError)
-                .map(Self::from))
-        }
+                .map(Self::from),
+        )
     }
 
     pub fn connect(&self) -> Result<Connection, DatabaseError> {
-        unsafe {
-            self.handle
-                .connect()
-                .map(Connection::from)
-                .map_err(|_| DatabaseError::ConnectError)
-        }
+        self.handle
+            .connect()
+            .map(Connection::from)
+            .map_err(|_| DatabaseError::ConnectError)
     }
 
     pub fn library_version() -> String {

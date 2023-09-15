@@ -28,7 +28,7 @@ impl ConfigHandle {
     pub unsafe fn from_raw(raw: ffi::duckdb_config) -> Self {
         Self(raw)
     }
-    pub fn set(&mut self, key: &CStr, value: &CStr) -> Result<(), ()> {
+    pub fn set(&self, key: &CStr, value: &CStr) -> Result<(), ()> {
         let state = unsafe { ffi::duckdb_set_config(self.0, key.as_ptr(), value.as_ptr()) };
         if state != ffi::DuckDBSuccess {
             return Err(());
