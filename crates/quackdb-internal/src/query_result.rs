@@ -5,11 +5,18 @@ use std::{
     sync::Arc,
 };
 
+use rust_decimal::prelude::*;
+use time::{Date, Duration, PrimitiveDateTime, Time};
+
 use crate::{
     connection::ConnectionHandle,
     ffi,
     statement::PreparedStatementHandle,
     types::{LogicalTypeHandle, TypeId},
+    value::{
+        duckdb_date_to_date, duckdb_hugeint_to_i128, duckdb_time_to_time,
+        duckdb_timestamp_to_datetime,
+    },
 };
 
 #[derive(Debug)]
@@ -135,6 +142,19 @@ impl QueryResultHandle {
     }
     /// # Safety
     /// Caller ensures type is correct and col and row are in bound
+    pub unsafe fn value_hugeint(&self, col: u64, row: u64) -> i128 {
+        let hugeint = ffi::duckdb_value_hugeint(self.handle_mut(), col, row);
+        duckdb_hugeint_to_i128(&hugeint)
+    }
+    /// # Safety
+    /// Caller ensures type is correct and col and row are in bound
+    pub unsafe fn value_decimal(&self, col: u64, row: u64) -> Decimal {
+        let decimal = ffi::duckdb_value_decimal(self.handle_mut(), col, row);
+        let value = duckdb_hugeint_to_i128(&decimal.value);
+        Decimal::from_i128_with_scale(value, decimal.scale as u32)
+    }
+    /// # Safety
+    /// Caller ensures type is correct and col and row are in bound
     pub unsafe fn value_u8(&self, col: u64, row: u64) -> u8 {
         ffi::duckdb_value_uint8(self.handle_mut(), col, row)
     }
@@ -170,6 +190,32 @@ impl QueryResultHandle {
         let s = CStr::from_ptr(p.data).to_string_lossy().into_owned();
         ffi::duckdb_free(p.data as *mut c_void);
         s
+    }
+    /// # Safety
+    /// Caller ensures type is correct and col and row are in bound.
+    pub unsafe fn value_date(&self, col: u64, row: u64) -> Date {
+        let date = ffi::duckdb_value_date(self.handle_mut(), col, row);
+        let date = ffi::duckdb_from_date(date);
+        duckdb_date_to_date(&date).expect("date conversion")
+    }
+    /// # Safety
+    /// Caller ensures type is correct and col and row are in bound.
+    pub unsafe fn value_time(&self, col: u64, row: u64) -> Time {
+        let time = ffi::duckdb_value_time(self.handle_mut(), col, row);
+        let time = ffi::duckdb_from_time(time);
+        duckdb_time_to_time(&time).expect("time conversion")
+    }
+    /// # Safety
+    /// Caller ensures type is correct and col and row are in bound.
+    pub unsafe fn value_timestamp(&self, col: u64, row: u64) -> PrimitiveDateTime {
+        let ts = ffi::duckdb_value_timestamp(self.handle_mut(), col, row);
+        let ts = ffi::duckdb_from_timestamp(ts);
+        duckdb_timestamp_to_datetime(&ts).expect("timestamp conversion")
+    }
+    /// # Safety
+    /// Caller ensures type is correct and col and row are in bound.
+    pub unsafe fn value_interval(&self, col: u64, row: u64) -> Duration {
+        todo!("DuckDb has special interval with months")
     }
     /// # Safety
     /// Caller ensures type is correct and col and row are in bound

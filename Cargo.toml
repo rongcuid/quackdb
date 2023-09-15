@@ -18,7 +18,6 @@ libduckdb-sys = "0.8.1"
 
 arrow = "46"
 parquet = "46"
-chrono = "^0.4.22"
 serde = "1"
 serde_json = "1"
 uuid = "1"
