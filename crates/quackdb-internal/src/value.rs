@@ -1,8 +1,10 @@
+use std::ffi::CStr;
+
 use paste::paste;
 use rust_decimal::Decimal;
 use time::{error::ComponentRange, Date, Duration, PrimitiveDateTime, Time};
 
-use crate::{ffi, query_result::QueryResultHandle};
+use crate::{ffi, query_result::QueryResultHandle, statement::PreparedStatementHandle};
 
 /// Values that can be read from DuckDb results.
 pub unsafe trait FromResult
@@ -12,6 +14,8 @@ where
     /// # Safety
     /// Does not need to check whether the type is correct or whether access is in bounds.
     unsafe fn from_result_unchecked(res: &QueryResultHandle, col: u64, row: u64) -> Self;
+    /// # Safety
+    /// Does not need to check whether the type is correct or whether access is in bounds.
     unsafe fn from_result_nullable_unchecked(
         res: &QueryResultHandle,
         col: u64,
@@ -21,6 +25,31 @@ where
             return None;
         }
         Some(Self::from_result_unchecked(res, col, row))
+    }
+}
+
+pub unsafe trait BindParam
+where
+    Self: Sized,
+{
+    /// # Safety
+    /// Does not need to check whether the type is correct or whether index is in bounds.
+    unsafe fn bind_param_unchecked(
+        stmt: &PreparedStatementHandle,
+        param_idx: u64,
+        val: Self,
+    ) -> Result<(), ()>;
+    /// # Safety
+    /// Does not need to check whether the type is correct or whether index is in bounds.
+    unsafe fn bind_param_nullable_unchecked(
+        stmt: &PreparedStatementHandle,
+        param_idx: u64,
+        val: Option<Self>,
+    ) -> Result<(), ()> {
+        match val {
+            Some(val) => Self::bind_param_unchecked(stmt, param_idx, val),
+            None => stmt.bind_null(param_idx),
+        }
     }
 }
 
@@ -121,7 +150,7 @@ macro_rules! impl_from_result_for_value {
     ($ty:ty, $method:ident) => {
         unsafe impl FromResult for $ty {
             unsafe fn from_result_unchecked(res: &QueryResultHandle, col: u64, row: u64) -> Self {
-                unsafe { res.$method(col, row) }
+                res.$method(col, row)
             }
         }
     };
@@ -146,3 +175,43 @@ impl_from_result_for_value! {Time, value_time}
 impl_from_result_for_value! {PrimitiveDateTime, value_timestamp}
 impl_from_result_for_value! {Duration, value_interval}
 impl_from_result_for_value! {Vec<u8>, value_blob}
+
+macro_rules! impl_bind_param_for_value {
+    ($ty:ty) => {
+        paste! {
+            impl_bind_param_for_value! {$ty, [<bind_ $ty>]}
+        }
+    };
+    ($ty:ty, $method:ident) => {
+        unsafe impl BindParam for $ty {
+            unsafe fn bind_param_unchecked(
+                stmt: &PreparedStatementHandle,
+                param_idx: u64,
+                val: Self,
+            ) -> Result<(), ()> {
+                stmt.$method(param_idx, val)
+            }
+        }
+    };
+}
+
+impl_bind_param_for_value! {bool}
+impl_bind_param_for_value! {i8}
+impl_bind_param_for_value! {i16}
+impl_bind_param_for_value! {i32}
+impl_bind_param_for_value! {i64}
+impl_bind_param_for_value! {i128}
+impl_bind_param_for_value! {DuckDbDecimal, bind_decimal}
+impl_bind_param_for_value! {u8}
+impl_bind_param_for_value! {u16}
+impl_bind_param_for_value! {u32}
+impl_bind_param_for_value! {u64}
+impl_bind_param_for_value! {f32}
+impl_bind_param_for_value! {f64}
+impl_bind_param_for_value! {&CStr, bind_varchar}
+impl_bind_param_for_value! {&str, bind_varchar_str}
+impl_bind_param_for_value! {Date, bind_date}
+impl_bind_param_for_value! {Time, bind_time}
+impl_bind_param_for_value! {PrimitiveDateTime, bind_timestamp}
+impl_bind_param_for_value! {Duration, bind_interval}
+impl_bind_param_for_value! {&[u8], bind_blob}
