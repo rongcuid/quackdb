@@ -28,6 +28,7 @@ where
     }
 }
 
+/// Values that can bind to prepared statements
 pub unsafe trait BindParam
 where
     Self: Sized,
