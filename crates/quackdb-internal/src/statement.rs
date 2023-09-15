@@ -1,7 +1,5 @@
 use std::{ffi::CStr, ops::Deref, sync::Arc};
 
-use parquet::schema;
-use rust_decimal::Decimal;
 use time::{Date, Duration, PrimitiveDateTime, Time};
 
 use crate::{
