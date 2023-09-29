@@ -101,7 +101,7 @@ mod test {
         // TODO make a high level API
         let arr = qr.handle.next_array().unwrap().unwrap().handle;
         assert_eq!(*arr.column(0).data_type(), DataType::Int32);
-        let id = arr.column(0).as_any().downcast_ref::<Int32Array>().unwrap();
+        let id: PrimitiveArray<Int32Type> = arr.column(0).to_data().into();
         assert_eq!(id.value(0), 0);
         assert_eq!(id.value(1), 1);
         assert_eq!(id.value(2), 2);
