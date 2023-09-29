@@ -63,6 +63,11 @@ impl Connection {
 
 #[cfg(test)]
 mod test {
+    use arrow::{
+        array::{Int32Array, PrimitiveArray},
+        datatypes::{DataType, Int32Type},
+    };
+
     use crate::database::Database;
 
     #[test]
@@ -92,10 +97,14 @@ mod test {
         assert_eq!(r3, 3);
         let r4 = conn.execute(r"SELECT * FROM tbl").unwrap().unwrap();
         assert_eq!(r4, 0);
-        // let qr = conn.query(r"SELECT * FROM tbl").unwrap().unwrap();
-        // assert_eq!(qr.get::<i32>(0, 0).unwrap(), 0);
-        // assert_eq!(qr.get::<i32>(0, 1).unwrap(), 1);
-        // assert_eq!(qr.get::<i32>(0, 2).unwrap(), 2);
-        // assert_eq!(qr.get::<i32>(0, 3).unwrap(), 3);
+        let qr = conn.query(r"SELECT * FROM tbl").unwrap().unwrap();
+        // TODO make a high level API
+        let arr = qr.handle.next_array().unwrap().unwrap().handle;
+        assert_eq!(*arr.column(0).data_type(), DataType::Int32);
+        let id = arr.column(0).as_any().downcast_ref::<Int32Array>().unwrap();
+        assert_eq!(id.value(0), 0);
+        assert_eq!(id.value(1), 1);
+        assert_eq!(id.value(2), 2);
+        assert_eq!(id.value(3), 3);
     }
 }

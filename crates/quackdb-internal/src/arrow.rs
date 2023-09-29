@@ -4,7 +4,7 @@ use std::{
 };
 
 use arrow::{
-    array::ArrayData,
+    array::{ArrayData, StructArray},
     error::ArrowError,
     ffi::{from_ffi, FFI_ArrowArray, FFI_ArrowSchema},
 };
@@ -24,7 +24,7 @@ pub enum ArrowResultParent {
 }
 
 pub struct ArrayDataHandle {
-    pub handle: ArrayData,
+    pub handle: StructArray,
     _parent: Arc<ArrowResultHandle>,
 }
 
@@ -89,7 +89,7 @@ impl ArrowResultHandle {
             return Err(());
         }
         let arr = from_ffi(out_array, &out_schema).map(|a| ArrayDataHandle {
-            handle: a,
+            handle: a.into(),
             _parent: self.clone(),
         });
         Ok(arr)
