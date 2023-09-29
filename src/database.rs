@@ -64,7 +64,7 @@ mod test {
     use super::*;
     #[test]
     fn test_open() {
-        let db = Database::open(None);
+        let db = Database::open(None).unwrap();
         assert!(db.is_ok());
     }
 
