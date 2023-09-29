@@ -1,8 +1,7 @@
 use std::{ffi::CStr, ops::Deref, sync::Arc};
 
 use crate::{
-    database::DatabaseHandle, ffi, query_result::QueryResultHandle,
-    statement::PreparedStatementHandle,
+    arrow::ArrowResultHandle, database::DatabaseHandle, ffi, statement::PreparedStatementHandle,
 };
 
 #[derive(Debug)]
@@ -20,11 +19,11 @@ impl ConnectionHandle {
             _parent: parent,
         })
     }
-    pub fn query(self: &Arc<Self>, sql: &CStr) -> Result<Arc<QueryResultHandle>, String> {
+    pub fn query(self: &Arc<Self>, sql: &CStr) -> Result<Arc<ArrowResultHandle>, String> {
         unsafe {
-            let mut result: ffi::duckdb_result = std::mem::zeroed();
-            let r = ffi::duckdb_query(self.handle, sql.as_ptr(), &mut result);
-            let h = QueryResultHandle::from_raw_connection(result, self.clone());
+            let mut result: ffi::duckdb_arrow = std::mem::zeroed();
+            let r = ffi::duckdb_query_arrow(self.handle, sql.as_ptr(), &mut result);
+            let h = ArrowResultHandle::from_raw_connection(result, self.clone());
             if r != ffi::DuckDBSuccess {
                 return Err(h.error());
             }

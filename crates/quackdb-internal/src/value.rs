@@ -4,30 +4,30 @@ use paste::paste;
 use rust_decimal::Decimal;
 use time::{error::ComponentRange, Date, Duration, PrimitiveDateTime, Time};
 
-use crate::{ffi, query_result::QueryResultHandle, statement::PreparedStatementHandle};
+use crate::{ffi, statement::PreparedStatementHandle};
 
-/// Values that can be read from DuckDb results.
-pub unsafe trait FromResult
-where
-    Self: Sized,
-{
-    /// # Safety
-    /// Does not need to check whether the type is correct or whether access is in bounds.
-    unsafe fn from_result_unchecked(res: &QueryResultHandle, col: u64, row: u64) -> Self;
-}
+// /// Values that can be read from DuckDb results.
+// pub unsafe trait FromResult
+// where
+//     Self: Sized,
+// {
+//     /// # Safety
+//     /// Does not need to check whether the type is correct or whether access is in bounds.
+//     unsafe fn from_result_unchecked(res: &QueryResultHandle, col: u64, row: u64) -> Self;
+// }
 
-/// `Option<T>` corresponds to nullable columns
-unsafe impl<T> FromResult for Option<T>
-where
-    T: FromResult,
-{
-    unsafe fn from_result_unchecked(res: &QueryResultHandle, col: u64, row: u64) -> Self {
-        if res.value_is_null(col, row) {
-            return None;
-        }
-        Some(T::from_result_unchecked(res, col, row))
-    }
-}
+// /// `Option<T>` corresponds to nullable columns
+// unsafe impl<T> FromResult for Option<T>
+// where
+//     T: FromResult,
+// {
+//     unsafe fn from_result_unchecked(res: &QueryResultHandle, col: u64, row: u64) -> Self {
+//         if res.value_is_null(col, row) {
+//             return None;
+//         }
+//         Some(T::from_result_unchecked(res, col, row))
+//     }
+// }
 
 /// Values that can bind to prepared statements
 pub unsafe trait BindParam {
@@ -145,40 +145,40 @@ pub fn datetime_to_duckdb_timestamp(dt: &PrimitiveDateTime) -> ffi::duckdb_times
     }
 }
 
-macro_rules! impl_from_result_for_value {
-    ($ty:ty) => {
-        paste! {
-            impl_from_result_for_value! {$ty, [<value_ $ty>]}
-        }
-    };
-    ($ty:ty, $method:ident) => {
-        unsafe impl FromResult for $ty {
-            unsafe fn from_result_unchecked(res: &QueryResultHandle, col: u64, row: u64) -> Self {
-                res.$method(col, row)
-            }
-        }
-    };
-}
+// macro_rules! impl_from_result_for_value {
+//     ($ty:ty) => {
+//         paste! {
+//             impl_from_result_for_value! {$ty, [<value_ $ty>]}
+//         }
+//     };
+//     ($ty:ty, $method:ident) => {
+//         unsafe impl FromResult for $ty {
+//             unsafe fn from_result_unchecked(res: &QueryResultHandle, col: u64, row: u64) -> Self {
+//                 res.$method(col, row)
+//             }
+//         }
+//     };
+// }
 
-impl_from_result_for_value! {bool}
-impl_from_result_for_value! {i8}
-impl_from_result_for_value! {i16}
-impl_from_result_for_value! {i32}
-impl_from_result_for_value! {i64}
-impl_from_result_for_value! {i128}
-impl_from_result_for_value! {DuckDbDecimal, value_decimal}
-impl_from_result_for_value! {u8}
-impl_from_result_for_value! {u16}
-impl_from_result_for_value! {u32}
-impl_from_result_for_value! {u64}
-impl_from_result_for_value! {f32}
-impl_from_result_for_value! {f64}
-impl_from_result_for_value! {String, value_string}
-impl_from_result_for_value! {Date, value_date}
-impl_from_result_for_value! {Time, value_time}
-impl_from_result_for_value! {PrimitiveDateTime, value_timestamp}
-impl_from_result_for_value! {Duration, value_interval}
-impl_from_result_for_value! {Vec<u8>, value_blob}
+// impl_from_result_for_value! {bool}
+// impl_from_result_for_value! {i8}
+// impl_from_result_for_value! {i16}
+// impl_from_result_for_value! {i32}
+// impl_from_result_for_value! {i64}
+// impl_from_result_for_value! {i128}
+// impl_from_result_for_value! {DuckDbDecimal, value_decimal}
+// impl_from_result_for_value! {u8}
+// impl_from_result_for_value! {u16}
+// impl_from_result_for_value! {u32}
+// impl_from_result_for_value! {u64}
+// impl_from_result_for_value! {f32}
+// impl_from_result_for_value! {f64}
+// impl_from_result_for_value! {String, value_string}
+// impl_from_result_for_value! {Date, value_date}
+// impl_from_result_for_value! {Time, value_time}
+// impl_from_result_for_value! {PrimitiveDateTime, value_timestamp}
+// impl_from_result_for_value! {Duration, value_interval}
+// impl_from_result_for_value! {Vec<u8>, value_blob}
 
 macro_rules! impl_bind_param_for_value {
     ($ty:ty) => {

@@ -2,7 +2,7 @@ use std::{ffi::CString, sync::Arc};
 
 use quackdb_internal::connection::ConnectionHandle;
 
-use crate::{error::*, query_result::QueryResult, statement::PreparedStatement};
+use crate::{arrow::ArrowResult, error::*, statement::PreparedStatement};
 
 #[derive(Debug)]
 pub struct Connection {
@@ -40,13 +40,13 @@ impl Connection {
     }
 
     /// Perform a query and return the handle.
-    pub fn query(&self, sql: &str) -> DbResult<QueryResult, ConnectionError> {
+    pub fn query(&self, sql: &str) -> DbResult<ArrowResult, ConnectionError> {
         let cstr = CString::new(sql)?;
         let result = self
             .handle
             .query(&cstr)
             .map_err(ConnectionError::QueryError)
-            .map(QueryResult::from);
+            .map(ArrowResult::from);
 
         Ok(result)
     }
@@ -63,6 +63,11 @@ impl Connection {
 
 #[cfg(test)]
 mod test {
+    use arrow::{
+        array::PrimitiveArray,
+        datatypes::{DataType, Int32Type},
+    };
+
     use crate::database::Database;
 
     #[test]
@@ -93,9 +98,13 @@ mod test {
         let r4 = conn.execute(r"SELECT * FROM tbl").unwrap().unwrap();
         assert_eq!(r4, 0);
         let qr = conn.query(r"SELECT * FROM tbl").unwrap().unwrap();
-        assert_eq!(qr.get::<i32>(0, 0).unwrap(), 0);
-        assert_eq!(qr.get::<i32>(0, 1).unwrap(), 1);
-        assert_eq!(qr.get::<i32>(0, 2).unwrap(), 2);
-        assert_eq!(qr.get::<i32>(0, 3).unwrap(), 3);
+        // TODO make a high level API
+        let arr = qr.handle.next_array().unwrap().unwrap().handle;
+        assert_eq!(*arr.column(0).data_type(), DataType::Int32);
+        let id: PrimitiveArray<Int32Type> = arr.column(0).to_data().into();
+        assert_eq!(id.value(0), 0);
+        assert_eq!(id.value(1), 1);
+        assert_eq!(id.value(2), 2);
+        assert_eq!(id.value(3), 3);
     }
 }

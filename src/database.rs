@@ -2,12 +2,7 @@ use std::{path::Path, sync::Arc};
 
 use quackdb_internal::database::DatabaseHandle;
 
-use crate::{
-    config::Config,
-    connection::Connection,
-    cutils::{option_path_to_cstring, option_path_to_ptr},
-    error::*,
-};
+use crate::{config::Config, connection::Connection, cutils::option_path_to_cstring, error::*};
 
 #[derive(Debug)]
 pub struct Database {

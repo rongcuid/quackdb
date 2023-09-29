@@ -5,7 +5,6 @@ use time::{Date, Duration, PrimitiveDateTime, Time};
 use crate::{
     connection::ConnectionHandle,
     ffi,
-    query_result::QueryResultHandle,
     types::TypeId,
     value::{
         date_to_duckdb_date, datetime_to_duckdb_timestamp, i128_to_duckdb_hugeint,
@@ -214,14 +213,14 @@ impl PreparedStatementHandle {
         }
         Ok(())
     }
-    pub fn execute(self: &Arc<Self>) -> Result<Arc<QueryResultHandle>, ()> {
-        unsafe {
-            let mut out_result = std::mem::zeroed();
-            if ffi::duckdb_execute_prepared(self.handle, &mut out_result) != ffi::DuckDBSuccess {
-                ffi::duckdb_destroy_result(&mut out_result);
-                return Err(());
-            }
-            Ok(QueryResultHandle::from_raw_statement(out_result, self.clone()).into())
-        }
-    }
+    // pub fn execute(self: &Arc<Self>) -> Result<Arc<QueryResultHandle>, ()> {
+    //     unsafe {
+    //         let mut out_result = std::mem::zeroed();
+    //         if ffi::duckdb_execute_prepared(self.handle, &mut out_result) != ffi::DuckDBSuccess {
+    //             ffi::duckdb_destroy_result(&mut out_result);
+    //             return Err(());
+    //         }
+    //         Ok(QueryResultHandle::from_raw_statement(out_result, self.clone()).into())
+    //     }
+    // }
 }
