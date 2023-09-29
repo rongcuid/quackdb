@@ -64,7 +64,7 @@ impl Connection {
 #[cfg(test)]
 mod test {
     use arrow::{
-        array::{Int32Array, PrimitiveArray},
+        array::PrimitiveArray,
         datatypes::{DataType, Int32Type},
     };
 

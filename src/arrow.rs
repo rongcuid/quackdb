@@ -1,9 +1,7 @@
-use std::{ops::Index, sync::Arc};
+use std::sync::Arc;
 
-use quackdb_internal::{arrow::ArrowResultHandle, types::TypeId};
+use quackdb_internal::arrow::ArrowResultHandle;
 use thiserror::Error;
-
-use crate::types::LogicalType;
 
 #[derive(Debug)]
 pub struct ArrowResult {
