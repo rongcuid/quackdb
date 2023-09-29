@@ -46,7 +46,6 @@ impl ArrowResultHandle {
         handle: ffi::duckdb_arrow,
         statement: Arc<PreparedStatementHandle>,
     ) -> Arc<Self> {
-        let mut schema = FFI_ArrowSchema::empty();
         Arc::new(Self {
             handle: handle,
             _parent: ArrowResultParent::Statement(statement),
