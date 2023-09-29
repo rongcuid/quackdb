@@ -28,6 +28,14 @@ pub struct ArrayDataHandle {
     _parent: Arc<ArrowResultHandle>,
 }
 
+impl Drop for ArrowResultHandle {
+    fn drop(&mut self) {
+        unsafe {
+            ffi::duckdb_destroy_arrow(&mut self.handle);
+        }
+    }
+}
+
 impl ArrowResultHandle {
     /// # Safety
     /// Takes ownership

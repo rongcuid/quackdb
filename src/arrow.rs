@@ -1,17 +1,10 @@
 use std::sync::Arc;
 
 use quackdb_internal::arrow::ArrowResultHandle;
-use thiserror::Error;
 
 #[derive(Debug)]
 pub struct ArrowResult {
     pub handle: Arc<ArrowResultHandle>,
-}
-
-#[derive(Error, Debug)]
-pub enum QueryResultError {
-    #[error("type error")]
-    TypeError,
 }
 
 impl From<Arc<ArrowResultHandle>> for ArrowResult {
@@ -29,15 +22,5 @@ impl ArrowResult {
     }
     pub fn rows_changed(&self) -> u64 {
         self.handle.rows_changed()
-    }
-}
-
-/// Internal functions
-impl ArrowResult {
-    fn check_col(&self, col: u64) {
-        assert!(col < self.column_count());
-    }
-    fn check_row(&self, row: u64) {
-        assert!(row < self.row_count());
     }
 }
