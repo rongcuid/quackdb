@@ -72,7 +72,7 @@ mod test {
         assert!(conn.is_ok());
     }
     #[test]
-    fn test_execute() {
+    fn test_query() {
         let db = Database::open(None).unwrap().unwrap();
         let conn = db.connect().unwrap();
         let r1 = conn
@@ -92,5 +92,10 @@ mod test {
         assert_eq!(r3, 3);
         let r4 = conn.execute(r"SELECT * FROM tbl").unwrap().unwrap();
         assert_eq!(r4, 0);
+        let qr = conn.query(r"SELECT * FROM tbl").unwrap().unwrap();
+        assert_eq!(qr.get::<i32>(0, 0).unwrap(), 0);
+        assert_eq!(qr.get::<i32>(0, 1).unwrap(), 1);
+        assert_eq!(qr.get::<i32>(0, 2).unwrap(), 2);
+        assert_eq!(qr.get::<i32>(0, 3).unwrap(), 3);
     }
 }

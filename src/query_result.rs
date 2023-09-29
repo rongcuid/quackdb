@@ -1,6 +1,6 @@
 use std::{ops::Index, sync::Arc};
 
-use quackdb_internal::{query_result::QueryResultHandle, value::FromResult};
+use quackdb_internal::{query_result::QueryResultHandle, types::TypeId, value::FromResult};
 use thiserror::Error;
 
 use crate::types::LogicalType;
@@ -8,7 +8,7 @@ use crate::types::LogicalType;
 #[derive(Debug)]
 pub struct QueryResult {
     pub handle: Arc<QueryResultHandle>,
-    pub types: Vec<LogicalType>,
+    pub types: Vec<TypeId>,
 }
 
 #[derive(Error, Debug)]
@@ -22,12 +22,7 @@ impl From<Arc<QueryResultHandle>> for QueryResult {
         Self {
             types: unsafe {
                 (0..handle.column_count())
-                    .map(|c| {
-                        handle
-                            .column_logical_type(c)
-                            .try_into()
-                            .expect("logical type")
-                    })
+                    .map(|c| handle.column_type(c))
                     .collect::<Vec<_>>()
             },
             handle,
@@ -56,14 +51,21 @@ impl QueryResult {
     pub fn rows_changed(&self) -> u64 {
         self.handle.rows_changed()
     }
-    /// Safe get
-    pub fn get<T: FromResult>(&self, col: u64, row: u64) -> T {
+    /// Safely get primitive value
+    pub fn get<T: FromResult + ?Sized + 'static>(
+        &self,
+        col: u64,
+        row: u64,
+    ) -> Result<T, QueryResultError> {
         self.check_col(col);
         self.check_row(row);
         let type_ = &self.types[col as usize];
-        todo!()
+        if !type_.is::<T>() {
+            return Err(QueryResultError::TypeError);
+        }
+        unsafe { Ok(self.get_unchecked(col, row)) }
     }
-    /// Get without checking bounds or type
+    /// Get primitive value without checking bounds or type
     pub unsafe fn get_unchecked<T: FromResult>(&self, col: u64, row: u64) -> T {
         T::from_result_unchecked(&self.handle, col, row)
     }

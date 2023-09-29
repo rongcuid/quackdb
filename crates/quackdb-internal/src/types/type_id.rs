@@ -1,4 +1,8 @@
-use crate::ffi;
+use std::any;
+
+use time::{Date, Duration, PrimitiveDateTime, Time};
+
+use crate::{ffi, value::DuckDbDecimal};
 
 #[derive(Debug, Clone, Copy)]
 #[non_exhaustive]
@@ -71,7 +75,7 @@ impl TypeId {
             _ => unreachable!("DUCKDB_TYPE"),
         }
     }
-    pub fn to_raw(&self) -> ffi::duckdb_type {
+    pub fn to_raw(self) -> ffi::duckdb_type {
         use TypeId::*;
         match self {
             Boolean => ffi::DUCKDB_TYPE_DUCKDB_TYPE_BOOLEAN,
@@ -103,6 +107,34 @@ impl TypeId {
             Uuid => ffi::DUCKDB_TYPE_DUCKDB_TYPE_UUID,
             Union => ffi::DUCKDB_TYPE_DUCKDB_TYPE_UNION,
             Bit => ffi::DUCKDB_TYPE_DUCKDB_TYPE_BIT,
+        }
+    }
+    /// If the type is a `T`
+    pub fn is<T: ?Sized + 'static>(self) -> bool {
+        let tid = any::TypeId::of::<T>();
+        match self {
+            TypeId::Boolean => tid == any::TypeId::of::<bool>(),
+            TypeId::TinyInt => tid == any::TypeId::of::<i8>(),
+            TypeId::SmallInt => tid == any::TypeId::of::<i16>(),
+            TypeId::Integer => tid == any::TypeId::of::<i32>(),
+            TypeId::BigInt => tid == any::TypeId::of::<i64>(),
+            TypeId::UTinyInt => tid == any::TypeId::of::<u8>(),
+            TypeId::USmallInt => tid == any::TypeId::of::<u16>(),
+            TypeId::UInteger => tid == any::TypeId::of::<u32>(),
+            TypeId::UBigInt => tid == any::TypeId::of::<u64>(),
+            TypeId::Float => tid == any::TypeId::of::<f32>(),
+            TypeId::Double => tid == any::TypeId::of::<f64>(),
+            TypeId::Timestamp => tid == any::TypeId::of::<PrimitiveDateTime>(),
+            TypeId::Date => tid == any::TypeId::of::<Date>(),
+            TypeId::Time => tid == any::TypeId::of::<Time>(),
+            TypeId::Interval => tid == any::TypeId::of::<Duration>(),
+            TypeId::HugeInt => tid == any::TypeId::of::<i128>(),
+            TypeId::VarChar => {
+                tid == any::TypeId::of::<&str>() || tid == any::TypeId::of::<String>()
+            }
+            TypeId::Blob => tid == any::TypeId::of::<&[u8]>(),
+            TypeId::Decimal => tid == any::TypeId::of::<DuckDbDecimal>(),
+            _ => false,
         }
     }
 }
