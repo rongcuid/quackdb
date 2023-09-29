@@ -14,41 +14,44 @@ where
     /// # Safety
     /// Does not need to check whether the type is correct or whether access is in bounds.
     unsafe fn from_result_unchecked(res: &QueryResultHandle, col: u64, row: u64) -> Self;
-    /// # Safety
-    /// Does not need to check whether the type is correct or whether access is in bounds.
-    unsafe fn from_result_nullable_unchecked(
-        res: &QueryResultHandle,
-        col: u64,
-        row: u64,
-    ) -> Option<Self> {
+}
+
+/// `Option<T>` corresponds to nullable columns
+unsafe impl<T> FromResult for Option<T>
+where
+    T: FromResult,
+{
+    unsafe fn from_result_unchecked(res: &QueryResultHandle, col: u64, row: u64) -> Self {
         if res.value_is_null(col, row) {
             return None;
         }
-        Some(Self::from_result_unchecked(res, col, row))
+        Some(T::from_result_unchecked(res, col, row))
     }
 }
 
 /// Values that can bind to prepared statements
-pub unsafe trait BindParam
-where
-    Self: Sized,
-{
+pub unsafe trait BindParam {
     /// # Safety
     /// Does not need to check whether the type is correct or whether index is in bounds.
     unsafe fn bind_param_unchecked(
+        self,
         stmt: &PreparedStatementHandle,
         param_idx: u64,
-        val: Self,
     ) -> Result<(), ()>;
-    /// # Safety
-    /// Does not need to check whether the type is correct or whether index is in bounds.
-    unsafe fn bind_param_nullable_unchecked(
+}
+
+/// `Option<T>` corresponds to nullable columns
+unsafe impl<T> BindParam for Option<T>
+where
+    T: BindParam,
+{
+    unsafe fn bind_param_unchecked(
+        self,
         stmt: &PreparedStatementHandle,
         param_idx: u64,
-        val: Option<Self>,
     ) -> Result<(), ()> {
-        match val {
-            Some(val) => Self::bind_param_unchecked(stmt, param_idx, val),
+        match self {
+            Some(t) => t.bind_param_unchecked(stmt, param_idx),
             None => stmt.bind_null(param_idx),
         }
     }
@@ -186,11 +189,11 @@ macro_rules! impl_bind_param_for_value {
     ($ty:ty, $method:ident) => {
         unsafe impl BindParam for $ty {
             unsafe fn bind_param_unchecked(
+                self,
                 stmt: &PreparedStatementHandle,
                 param_idx: u64,
-                val: Self,
             ) -> Result<(), ()> {
-                stmt.$method(param_idx, val)
+                stmt.$method(param_idx, self)
             }
         }
     };

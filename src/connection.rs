@@ -1,8 +1,8 @@
 use std::{ffi::CString, sync::Arc};
 
-use quackdb_internal::{connection::ConnectionHandle, query_result::QueryResultHandle};
+use quackdb_internal::connection::ConnectionHandle;
 
-use crate::{error::*, statement::PreparedStatement};
+use crate::{error::*, query_result::QueryResult, statement::PreparedStatement};
 
 #[derive(Debug)]
 pub struct Connection {
@@ -36,28 +36,28 @@ impl Connection {
 
     /// Execute an SQL statement and return the number of rows changed
     pub fn execute(&self, sql: &str) -> DbResult<u64, ConnectionError> {
-        Ok(self.query_raw(sql)?.map(|r| r.rows_changed()))
+        Ok(self.query(sql)?.map(|r| r.rows_changed()))
     }
 
-    /// Perform a query and return the handle
-    pub fn query_raw(&self, sql: &str) -> DbResult<Arc<QueryResultHandle>, ConnectionError> {
+    /// Perform a query and return the handle.
+    pub fn query(&self, sql: &str) -> DbResult<QueryResult, ConnectionError> {
         let cstr = CString::new(sql)?;
         let result = self
             .handle
             .query(&cstr)
-            .map_err(ConnectionError::QueryError);
+            .map_err(ConnectionError::QueryError)
+            .map(QueryResult::from);
+
         Ok(result)
     }
 
     pub fn prepare(&self, query: &str) -> DbResult<PreparedStatement, ConnectionError> {
         let cstr = CString::new(query)?;
-        unsafe {
-            Ok(self
-                .handle
-                .prepare(&cstr)
-                .map_err(ConnectionError::PrepareError)
-                .map(PreparedStatement::from))
-        }
+        Ok(self
+            .handle
+            .prepare(&cstr)
+            .map_err(ConnectionError::PrepareError)
+            .map(PreparedStatement::from))
     }
 }
 
