@@ -99,12 +99,14 @@ mod test {
         assert_eq!(r4, 0);
         let mut qr = conn.query(r"SELECT * FROM tbl").unwrap().unwrap();
         // TODO make a high level API
-        let rec = qr.handle.next_record().unwrap().unwrap();
+        let rec = qr.query_array().unwrap().unwrap();
         assert_eq!(*rec.column(0).data_type(), DataType::Int32);
         let id: PrimitiveArray<Int32Type> = rec.column(0).to_data().into();
         assert_eq!(id.value(0), 0);
         assert_eq!(id.value(1), 1);
         assert_eq!(id.value(2), 2);
         assert_eq!(id.value(3), 3);
+        let rec = qr.query_array().unwrap();
+        assert!(rec.is_none());
     }
 }

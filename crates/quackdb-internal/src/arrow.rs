@@ -25,19 +25,6 @@ pub enum ArrowResultParent {
     Statement(Arc<PreparedStatementHandle>),
 }
 
-pub struct RecordBatchHandle<'result> {
-    handle: RecordBatch,
-    _parent: PhantomData<&'result mut ArrowResultHandle>,
-}
-
-impl<'result> Deref for RecordBatchHandle<'result> {
-    type Target = RecordBatch;
-
-    fn deref(&self) -> &Self::Target {
-        &self.handle
-    }
-}
-
 impl ArrowResultHandle {
     /// # Safety
     /// Takes ownership
@@ -76,19 +63,10 @@ impl ArrowResultHandle {
     pub fn rows_changed(&self) -> u64 {
         unsafe { ffi::duckdb_arrow_rows_changed(self.handle) }
     }
-    pub fn next_record<'result>(
-        &'result mut self,
-    ) -> Result<Result<RecordBatchHandle<'result>, ArrowError>, ()> {
-        Ok(
-            unsafe { self.next_record_unchecked() }?.map(|r| RecordBatchHandle {
-                handle: r,
-                _parent: PhantomData {},
-            }),
-        )
-    }
+
     /// # Safety
     /// The result must be consumed before calling this again
-    pub unsafe fn next_record_unchecked(&self) -> Result<Result<RecordBatch, ArrowError>, ()> {
+    pub unsafe fn query_array(&self) -> Result<Result<RecordBatch, ArrowError>, String> {
         let mut out_schema = FFI_ArrowSchema::empty();
         if unsafe {
             ffi::duckdb_query_arrow_schema(
@@ -97,7 +75,7 @@ impl ArrowResultHandle {
             )
         } != ffi::DuckDBSuccess
         {
-            return Err(());
+            return Err("duckdb_query_arrow_schema()".to_owned());
         }
         let mut out_array = FFI_ArrowArray::empty();
         if unsafe {
@@ -107,7 +85,7 @@ impl ArrowResultHandle {
             )
         } != ffi::DuckDBSuccess
         {
-            return Err(());
+            return Err("duckdb_query_arrow_array()".to_owned());
         }
         let arr = from_ffi(out_array, &out_schema)
             .map(StructArray::from)
