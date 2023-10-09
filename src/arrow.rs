@@ -29,6 +29,7 @@ impl From<ArrowResultHandle> for ArrowResult {
     }
 }
 
+/// Lifetime ensures that the record batch is consumed before querying the next chunk
 impl<'result> Deref for RecordBatchHandle<'result> {
     type Target = RecordBatch;
 

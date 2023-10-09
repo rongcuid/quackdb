@@ -5,7 +5,7 @@
 * [x] Move handles to an internal module
 * [x] Make sure internal module do not reference higher level types
 * [ ] Proper string type for duckdb: UTF-8, non-null terminated
-* [ ] Document low level interface
+* [ ] Implement and document low level interface
 ** [x] Database
 ** [x] Connection
 ** [x] Query results
@@ -15,9 +15,10 @@
 ** [x] Database
 ** [x] Connection
 ** [ ] Query results
-*** [ ] Values
+*** [x] RecordBatch
+*** [ ] Result mapping
+*** [ ] Result to polars
 ** [ ] Statements
-** [ ] Values
 
 == API Level
 
