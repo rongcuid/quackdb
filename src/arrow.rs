@@ -4,11 +4,11 @@ use quackdb_internal::arrow::ArrowResultHandle;
 
 #[derive(Debug)]
 pub struct ArrowResult {
-    pub handle: Arc<ArrowResultHandle>,
+    pub handle: ArrowResultHandle,
 }
 
-impl From<Arc<ArrowResultHandle>> for ArrowResult {
-    fn from(handle: Arc<ArrowResultHandle>) -> Self {
+impl From<ArrowResultHandle> for ArrowResult {
+    fn from(handle: ArrowResultHandle) -> Self {
         Self { handle }
     }
 }

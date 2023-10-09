@@ -1,10 +1,12 @@
 use std::{
     ffi::{c_void, CStr},
+    marker::PhantomData,
+    ops::Deref,
     sync::Arc,
 };
 
 use arrow::{
-    array::{ArrayData, StructArray},
+    array::{ArrayData, RecordBatch, StructArray},
     error::ArrowError,
     ffi::{from_ffi, FFI_ArrowArray, FFI_ArrowSchema},
 };
@@ -23,16 +25,16 @@ pub enum ArrowResultParent {
     Statement(Arc<PreparedStatementHandle>),
 }
 
-pub struct ArrayDataHandle {
-    pub handle: StructArray,
-    _parent: Arc<ArrowResultHandle>,
+pub struct RecordBatchHandle<'result> {
+    pub handle: RecordBatch,
+    _parent: PhantomData<&'result mut ArrowResultHandle>,
 }
 
-impl Drop for ArrowResultHandle {
-    fn drop(&mut self) {
-        unsafe {
-            ffi::duckdb_destroy_arrow(&mut self.handle);
-        }
+impl<'result> Deref for RecordBatchHandle<'result> {
+    type Target = RecordBatch;
+
+    fn deref(&self) -> &Self::Target {
+        &self.handle
     }
 }
 
@@ -42,11 +44,11 @@ impl ArrowResultHandle {
     pub unsafe fn from_raw_connection(
         handle: ffi::duckdb_arrow,
         connection: Arc<ConnectionHandle>,
-    ) -> Arc<Self> {
-        Arc::new(Self {
+    ) -> Self {
+        Self {
             handle,
             _parent: ArrowResultParent::Connection(connection),
-        })
+        }
     }
     /// # Safety
     /// Takes ownership
@@ -74,7 +76,19 @@ impl ArrowResultHandle {
     pub fn rows_changed(&self) -> u64 {
         unsafe { ffi::duckdb_arrow_rows_changed(self.handle) }
     }
-    pub fn next_array(self: &Arc<Self>) -> Result<Result<ArrayDataHandle, ArrowError>, ()> {
+    pub fn next_record<'result>(
+        &'result mut self,
+    ) -> Result<Result<RecordBatchHandle<'result>, ArrowError>, ()> {
+        Ok(
+            unsafe { self.next_record_unchecked() }?.map(|r| RecordBatchHandle {
+                handle: r,
+                _parent: PhantomData {},
+            }),
+        )
+    }
+    /// # Safety
+    /// The result must be consumed before calling this again
+    pub unsafe fn next_record_unchecked(&self) -> Result<Result<RecordBatch, ArrowError>, ()> {
         let mut out_schema = FFI_ArrowSchema::empty();
         if unsafe {
             ffi::duckdb_query_arrow_schema(
@@ -95,10 +109,9 @@ impl ArrowResultHandle {
         {
             return Err(());
         }
-        let arr = from_ffi(out_array, &out_schema).map(|a| ArrayDataHandle {
-            handle: a.into(),
-            _parent: self.clone(),
-        });
+        let arr = from_ffi(out_array, &out_schema)
+            .map(StructArray::from)
+            .map(RecordBatch::from);
         Ok(arr)
     }
 }
