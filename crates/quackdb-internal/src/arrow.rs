@@ -26,7 +26,7 @@ pub enum ArrowResultParent {
 }
 
 pub struct RecordBatchHandle<'result> {
-    pub handle: RecordBatch,
+    handle: RecordBatch,
     _parent: PhantomData<&'result mut ArrowResultHandle>,
 }
 
@@ -113,5 +113,19 @@ impl ArrowResultHandle {
             .map(StructArray::from)
             .map(RecordBatch::from);
         Ok(arr)
+    }
+}
+
+impl Deref for ArrowResultHandle {
+    type Target = ffi::duckdb_arrow;
+
+    fn deref(&self) -> &Self::Target {
+        &self.handle
+    }
+}
+
+impl Drop for ArrowResultHandle {
+    fn drop(&mut self) {
+        unsafe { ffi::duckdb_destroy_arrow(&mut self.handle) }
     }
 }
