@@ -51,11 +51,24 @@ impl ArrowResult {
         self.handle.rows_changed()
     }
 
+    /// Map each record batch into rows, take the results as iterators. Each item is fallable
     pub fn try_batch_map_into<B, I, F>(self, f: F) -> TryBatchMap<B, F>
     where
         I: Iterator<Item = B>,
         F: FnMut(RecordBatch) -> I,
     {
         TryBatchMap::new(self, f)
+    }
+
+    /// Map each record batch into rows, take the results as iterators.
+    ///
+    /// # Panics
+    /// The iterator might panic if an error is encountered
+    pub fn batch_map_into<B, I, F>(self, f: F) -> impl Iterator<Item = B>
+    where
+        I: Iterator<Item = B>,
+        F: FnMut(RecordBatch) -> I,
+    {
+        TryBatchMap::new(self, f).map(|r| r.expect("batch_map_into"))
     }
 }
