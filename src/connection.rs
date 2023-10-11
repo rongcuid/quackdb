@@ -97,16 +97,31 @@ mod test {
         assert_eq!(r3, 3);
         let r4 = conn.execute(r"SELECT * FROM tbl").unwrap().unwrap();
         assert_eq!(r4, 0);
-        let mut qr = conn.query(r"SELECT * FROM tbl").unwrap().unwrap();
-        // TODO make a high level API
-        let rec = qr.query_array().unwrap().unwrap();
+        let qr = conn.query(r"SELECT * FROM tbl").unwrap().unwrap();
+
+        let rec = unsafe { qr.handle.query_array().unwrap().unwrap() };
         assert_eq!(*rec.column(0).data_type(), DataType::Int32);
         let id: PrimitiveArray<Int32Type> = rec.column(0).to_data().into();
         assert_eq!(id.value(0), 0);
         assert_eq!(id.value(1), 1);
         assert_eq!(id.value(2), 2);
         assert_eq!(id.value(3), 3);
-        let rec = qr.query_array().unwrap();
-        assert!(rec.is_none());
+
+        let mut qr = conn
+            .query(r"SELECT * FROM tbl")
+            .unwrap()
+            .unwrap()
+            .try_batch_map_into(|rec| {
+                (0..rec.num_rows()).map(move |r| {
+                    let arr: PrimitiveArray<Int32Type> = rec.column(0).to_data().into();
+                    arr.value(r)
+                })
+            })
+            .map(|r| r.unwrap());
+        assert_eq!(qr.next(), Some(0));
+        assert_eq!(qr.next(), Some(1));
+        assert_eq!(qr.next(), Some(2));
+        assert_eq!(qr.next(), Some(3));
+        assert_eq!(qr.next(), None);
     }
 }

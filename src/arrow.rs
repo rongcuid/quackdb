@@ -4,6 +4,8 @@ use thiserror::Error;
 
 use quackdb_internal::arrow::ArrowResultHandle;
 
+use crate::rows::TryBatchMap;
+
 #[derive(Debug)]
 pub struct ArrowResult {
     pub handle: ArrowResultHandle,
@@ -48,18 +50,12 @@ impl ArrowResult {
     pub fn rows_changed(&self) -> u64 {
         self.handle.rows_changed()
     }
-    pub fn query_array<'result>(
-        &'result mut self,
-    ) -> Result<Option<RecordBatchHandle<'result>>, ArrowResultError> {
-        let res = unsafe { self.handle.query_array() };
-        match res {
-            Ok(Ok(res)) if res.num_rows() == 0 => Ok(None),
-            Ok(Ok(res)) => Ok(Some(RecordBatchHandle {
-                handle: res,
-                _parent: PhantomData {},
-            })),
-            Ok(Err(err)) => Err(ArrowResultError::ArrowError(err)),
-            Err(err) => Err(ArrowResultError::QueryNextError(err)),
-        }
+
+    pub fn try_batch_map_into<B, I, F>(self, f: F) -> TryBatchMap<B, F>
+    where
+        I: Iterator<Item = B>,
+        F: FnMut(RecordBatch) -> I,
+    {
+        TryBatchMap::new(self, f)
     }
 }
