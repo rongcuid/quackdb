@@ -5,6 +5,7 @@
 * [x] Move handles to an internal module
 * [x] Make sure internal module do not reference higher level types
 * [ ] Proper string type for duckdb: UTF-8, non-null terminated
+* [x] Refactor for granular error types
 * [ ] Implement and document low level interface
 ** [x] Database
 ** [x] Connection
@@ -16,7 +17,8 @@
 ** [x] Connection
 ** [ ] Query results
 *** [x] RecordBatch
-*** [ ] Result mapping
+*** [x] Result batch mapping
+*** [ ] Result row mapping
 *** [ ] Result to polars
 ** [ ] Statements
 

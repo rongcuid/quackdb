@@ -1,8 +1,11 @@
-use std::{ffi::CString, sync::Arc};
+use std::{
+    ffi::{CString, NulError},
+    sync::Arc,
+};
 
 use quackdb_internal::connection::ConnectionHandle;
 
-use crate::{arrow::ArrowResult, error::*, statement::PreparedStatement};
+use crate::{arrow::ArrowResult, statement::PreparedStatement};
 
 #[derive(Debug)]
 pub struct Connection {
@@ -17,6 +20,8 @@ pub enum ConnectionError {
     QueryError(String),
     #[error("duckdb_prepare() error: {0}")]
     PrepareError(String),
+    #[error(transparent)]
+    NulError(#[from] NulError),
 }
 
 impl From<Arc<ConnectionHandle>> for Connection {
@@ -35,29 +40,25 @@ impl Connection {
     // }
 
     /// Execute an SQL statement and return the number of rows changed
-    pub fn execute(&self, sql: &str) -> DbResult<u64, ConnectionError> {
-        Ok(self.query(sql)?.map(|r| r.rows_changed()))
+    pub fn execute(&self, sql: &str) -> Result<u64, ConnectionError> {
+        self.query(sql).map(|r| r.rows_changed())
     }
 
     /// Perform a query and return the handle.
-    pub fn query(&self, sql: &str) -> DbResult<ArrowResult, ConnectionError> {
+    pub fn query(&self, sql: &str) -> Result<ArrowResult, ConnectionError> {
         let cstr = CString::new(sql)?;
-        let result = self
-            .handle
+        self.handle
             .query(&cstr)
             .map_err(ConnectionError::QueryError)
-            .map(ArrowResult::from);
-
-        Ok(result)
+            .map(ArrowResult::from)
     }
 
-    pub fn prepare(&self, query: &str) -> DbResult<PreparedStatement, ConnectionError> {
+    pub fn prepare(&self, query: &str) -> Result<PreparedStatement, ConnectionError> {
         let cstr = CString::new(query)?;
-        Ok(self
-            .handle
+        self.handle
             .prepare(&cstr)
             .map_err(ConnectionError::PrepareError)
-            .map(PreparedStatement::from))
+            .map(PreparedStatement::from)
     }
 }
 
@@ -72,39 +73,31 @@ mod test {
 
     #[test]
     fn test_connect() {
-        let db = Database::open(None).unwrap().unwrap();
+        let db = Database::open(None).unwrap();
         let conn = db.connect();
         assert!(conn.is_ok());
     }
     #[test]
     fn test_query() {
-        let db = Database::open(None).unwrap().unwrap();
+        let db = Database::open(None).unwrap();
         let conn = db.connect().unwrap();
-        let r1 = conn
-            .execute(r"CREATE TABLE tbl(id INTEGER)")
-            .unwrap()
-            .unwrap();
+        let r1 = conn.execute(r"CREATE TABLE tbl(id INTEGER)").unwrap();
         assert_eq!(r1, 0);
-        let r2 = conn
-            .execute(r"INSERT INTO tbl VALUES (0)")
-            .unwrap()
-            .unwrap();
+        let r2 = conn.execute(r"INSERT INTO tbl VALUES (0)").unwrap();
         assert_eq!(r2, 1);
         let r3 = conn
             .execute(r"INSERT INTO tbl VALUES (1), (2), (3)")
-            .unwrap()
             .unwrap();
         assert_eq!(r3, 3);
-        let r4 = conn.execute(r"SELECT * FROM tbl").unwrap().unwrap();
+        let r4 = conn.execute(r"SELECT * FROM tbl").unwrap();
         assert_eq!(r4, 0);
-        let qr = conn.query(r"SELECT * FROM tbl").unwrap().unwrap();
+        let qr = conn.query(r"SELECT * FROM tbl").unwrap();
 
         let rec = unsafe { qr.handle.query_array().unwrap().unwrap() };
         assert_eq!(*rec.column(0).data_type(), DataType::Int32);
 
         let mut qr = conn
             .query(r"SELECT * FROM tbl")
-            .unwrap()
             .unwrap()
             .batch_map_into(|rec| {
                 (0..rec.num_rows()).map(move |r| {

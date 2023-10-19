@@ -48,13 +48,6 @@ impl DatabaseHandle {
     pub unsafe fn close(&mut self) {
         ffi::duckdb_close(&mut self.0);
     }
-
-    pub fn library_version() -> String {
-        unsafe {
-            let p = CStr::from_ptr(ffi::duckdb_library_version());
-            p.to_string_lossy().to_owned().to_string()
-        }
-    }
 }
 
 impl Drop for DatabaseHandle {
