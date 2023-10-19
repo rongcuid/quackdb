@@ -31,15 +31,6 @@ impl From<ArrowResultHandle> for ArrowResult {
     }
 }
 
-/// Lifetime ensures that the record batch is consumed before querying the next chunk
-impl<'result> Deref for RecordBatchHandle<'result> {
-    type Target = RecordBatch;
-
-    fn deref(&self) -> &Self::Target {
-        &self.handle
-    }
-}
-
 impl ArrowResult {
     pub fn column_count(&self) -> u64 {
         self.handle.column_count()
