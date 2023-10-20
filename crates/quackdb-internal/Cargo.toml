@@ -10,7 +10,7 @@ thiserror = "1"
 strum = { version = "0.25", features = ["derive"] }
 paste = "1"
 
-libduckdb-sys = "0.9"
+libduckdb-sys = { version = "0.9", features = ["bundled"] }
 
 cstr = "0.2"
 arrow = { version = "47", features = ["ffi"] }
