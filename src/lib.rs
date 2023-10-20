@@ -6,7 +6,6 @@ mod config;
 mod connection;
 mod database;
 mod replacement_scan;
-mod rows;
 mod statement;
 mod table_function;
 mod types;

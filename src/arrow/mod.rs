@@ -1,20 +1,15 @@
+mod iters;
+
 use arrow::{array::RecordBatch, error::ArrowError};
-use std::{marker::PhantomData, ops::Deref, sync::Arc};
 use thiserror::Error;
 
 use quackdb_internal::arrow::ArrowResultHandle;
 
-use crate::rows::TryBatchMap;
+use iters::TryBatchMap;
 
 #[derive(Debug)]
 pub struct ArrowResult {
     pub handle: ArrowResultHandle,
-}
-
-#[derive(Debug)]
-pub struct RecordBatchHandle<'result> {
-    handle: RecordBatch,
-    _parent: PhantomData<&'result mut ArrowResultHandle>,
 }
 
 #[derive(Error, Debug)]

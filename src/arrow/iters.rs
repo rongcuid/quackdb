@@ -1,10 +1,10 @@
 use std::collections::VecDeque;
 
-use arrow::{array::RecordBatch, error::ArrowError};
+use arrow::array::RecordBatch;
 
 use crate::arrow::{ArrowResult, ArrowResultError};
 
-/// Iterator that maps record batches to rows
+/// Iterator that maps `ArrowResult` batch by batch
 pub struct TryBatchMap<B, F> {
     result: ArrowResult,
     f: F,
