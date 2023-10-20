@@ -1,7 +1,6 @@
 use std::ffi::{CString, NulError};
 
 use quackdb_internal::config::ConfigHandle;
-use strum::{Display, EnumString};
 
 /// duckdb configuration
 #[derive(Default, Debug)]

@@ -30,17 +30,13 @@ impl PreparedStatement {
         Ok(self)
     }
     /// Reset current position. Parameters already bound are kept.
-    pub fn reset(&mut self) -> Result<&mut Self, PreparedStatementError> {
-        self.set_position(1)?;
-        Ok(self)
+    pub fn reset(&mut self) -> &mut Self {
+        self.set_position(1)
     }
-    pub fn set_position(&mut self, param_idx: u64) -> Result<&mut Self, PreparedStatementError> {
-        let nparams = self.handle.nparams();
-        if param_idx > nparams {
-            return Err(PreparedStatementError::BindOutOfBound(param_idx, nparams));
-        }
+    pub fn set_position(&mut self, param_idx: u64) -> &mut Self {
+        let _nparams = self.handle.nparams();
         self.current_index = param_idx;
-        Ok(self)
+        self
     }
     /// Bind one paramer at specified position
     pub fn bind_at<T: BindParam>(
@@ -49,7 +45,7 @@ impl PreparedStatement {
         param_idx: u64,
     ) -> Result<(), PreparedStatementError> {
         let nparams = self.handle.nparams();
-        if param_idx > nparams {
+        if !(1..=nparams).contains(&param_idx) {
             return Err(PreparedStatementError::BindOutOfBound(param_idx, nparams));
         }
         unsafe { param.bind_param_unchecked(&self.handle, param_idx) }

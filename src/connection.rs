@@ -60,7 +60,7 @@ impl Connection {
 #[cfg(test)]
 mod test {
     use arrow::{
-        array::{AsArray, PrimitiveArray, StringArray},
+        array::{AsArray, PrimitiveArray},
         datatypes::{DataType, Int32Type},
     };
 
@@ -135,7 +135,7 @@ mod test {
         assert_eq!(r1, vec![0, 1, 2, 3]);
         let mut stmt = conn.prepare("INSERT INTO tbl VALUES (?)").unwrap();
         for i in 4i32..8 {
-            stmt.reset().unwrap().bind(i).unwrap();
+            stmt.reset().bind(i).unwrap();
             stmt.execute().unwrap();
         }
         let r2 = conn
@@ -170,12 +170,7 @@ mod test {
         let conn = db2();
         let mut stmt = conn.prepare("INSERT INTO tbl VALUES (?, ?)").unwrap();
         for i in 4i32..8 {
-            stmt.reset()
-                .unwrap()
-                .bind(i)
-                .unwrap()
-                .bind(i.to_string())
-                .unwrap();
+            stmt.reset().bind(i).unwrap().bind(i.to_string()).unwrap();
             stmt.execute().unwrap();
         }
         let r2 = conn
