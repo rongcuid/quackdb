@@ -6,29 +6,6 @@ use time::{error::ComponentRange, Date, Duration, PrimitiveDateTime, Time};
 
 use crate::{ffi, statement::PreparedStatementHandle};
 
-// /// Values that can be read from DuckDb results.
-// pub unsafe trait FromResult
-// where
-//     Self: Sized,
-// {
-//     /// # Safety
-//     /// Does not need to check whether the type is correct or whether access is in bounds.
-//     unsafe fn from_result_unchecked(res: &QueryResultHandle, col: u64, row: u64) -> Self;
-// }
-
-// /// `Option<T>` corresponds to nullable columns
-// unsafe impl<T> FromResult for Option<T>
-// where
-//     T: FromResult,
-// {
-//     unsafe fn from_result_unchecked(res: &QueryResultHandle, col: u64, row: u64) -> Self {
-//         if res.value_is_null(col, row) {
-//             return None;
-//         }
-//         Some(T::from_result_unchecked(res, col, row))
-//     }
-// }
-
 /// Values that can bind to prepared statements
 pub unsafe trait BindParam {
     /// # Safety
@@ -37,7 +14,7 @@ pub unsafe trait BindParam {
         self,
         stmt: &PreparedStatementHandle,
         param_idx: u64,
-    ) -> Result<(), ()>;
+    ) -> Result<(), &'static str>;
 }
 
 /// `Option<T>` corresponds to nullable columns
@@ -49,10 +26,10 @@ where
         self,
         stmt: &PreparedStatementHandle,
         param_idx: u64,
-    ) -> Result<(), ()> {
+    ) -> Result<(), &'static str> {
         match self {
             Some(t) => t.bind_param_unchecked(stmt, param_idx),
-            None => stmt.bind_null(param_idx),
+            None => stmt.bind_null(param_idx).map_err(|_| "duckdb_bind_null()"),
         }
     }
 }
@@ -145,41 +122,6 @@ pub fn datetime_to_duckdb_timestamp(dt: &PrimitiveDateTime) -> ffi::duckdb_times
     }
 }
 
-// macro_rules! impl_from_result_for_value {
-//     ($ty:ty) => {
-//         paste! {
-//             impl_from_result_for_value! {$ty, [<value_ $ty>]}
-//         }
-//     };
-//     ($ty:ty, $method:ident) => {
-//         unsafe impl FromResult for $ty {
-//             unsafe fn from_result_unchecked(res: &QueryResultHandle, col: u64, row: u64) -> Self {
-//                 res.$method(col, row)
-//             }
-//         }
-//     };
-// }
-
-// impl_from_result_for_value! {bool}
-// impl_from_result_for_value! {i8}
-// impl_from_result_for_value! {i16}
-// impl_from_result_for_value! {i32}
-// impl_from_result_for_value! {i64}
-// impl_from_result_for_value! {i128}
-// impl_from_result_for_value! {DuckDbDecimal, value_decimal}
-// impl_from_result_for_value! {u8}
-// impl_from_result_for_value! {u16}
-// impl_from_result_for_value! {u32}
-// impl_from_result_for_value! {u64}
-// impl_from_result_for_value! {f32}
-// impl_from_result_for_value! {f64}
-// impl_from_result_for_value! {String, value_string}
-// impl_from_result_for_value! {Date, value_date}
-// impl_from_result_for_value! {Time, value_time}
-// impl_from_result_for_value! {PrimitiveDateTime, value_timestamp}
-// impl_from_result_for_value! {Duration, value_interval}
-// impl_from_result_for_value! {Vec<u8>, value_blob}
-
 macro_rules! impl_bind_param_for_value {
     ($ty:ty) => {
         paste! {
@@ -187,13 +129,18 @@ macro_rules! impl_bind_param_for_value {
         }
     };
     ($ty:ty, $method:ident) => {
+        paste! {
+            impl_bind_param_for_value! {$ty, $method, stringify!([<duckdb_ $method>]())}
+        }
+    };
+    ($ty:ty, $method:ident, $err_msg:expr) => {
         unsafe impl BindParam for $ty {
             unsafe fn bind_param_unchecked(
                 self,
                 stmt: &PreparedStatementHandle,
                 param_idx: u64,
-            ) -> Result<(), ()> {
-                stmt.$method(param_idx, self)
+            ) -> Result<(), &'static str> {
+                stmt.$method(param_idx, self).map_err(|_| $err_msg)
             }
         }
     };
@@ -219,3 +166,14 @@ impl_bind_param_for_value! {Time, bind_time}
 impl_bind_param_for_value! {PrimitiveDateTime, bind_timestamp}
 impl_bind_param_for_value! {Duration, bind_interval}
 impl_bind_param_for_value! {&[u8], bind_blob}
+
+unsafe impl BindParam for String {
+    unsafe fn bind_param_unchecked(
+        self,
+        stmt: &PreparedStatementHandle,
+        param_idx: u64,
+    ) -> Result<(), &'static str> {
+        stmt.bind_varchar_str(param_idx, &self)
+            .map_err(|_| "duckdb_bind_varchar_str()")
+    }
+}

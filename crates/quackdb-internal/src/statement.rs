@@ -3,6 +3,7 @@ use std::{ffi::CStr, ops::Deref, sync::Arc};
 use time::{Date, Duration, PrimitiveDateTime, Time};
 
 use crate::{
+    arrow::ArrowResultHandle,
     connection::ConnectionHandle,
     ffi,
     types::TypeId,
@@ -213,14 +214,15 @@ impl PreparedStatementHandle {
         }
         Ok(())
     }
-    // pub fn execute(self: &Arc<Self>) -> Result<Arc<QueryResultHandle>, ()> {
-    //     unsafe {
-    //         let mut out_result = std::mem::zeroed();
-    //         if ffi::duckdb_execute_prepared(self.handle, &mut out_result) != ffi::DuckDBSuccess {
-    //             ffi::duckdb_destroy_result(&mut out_result);
-    //             return Err(());
-    //         }
-    //         Ok(QueryResultHandle::from_raw_statement(out_result, self.clone()).into())
-    //     }
-    // }
+    pub fn execute(self: &Arc<Self>) -> Result<ArrowResultHandle, String> {
+        unsafe {
+            let mut result: ffi::duckdb_arrow = std::mem::zeroed();
+            let r = ffi::duckdb_execute_prepared_arrow(self.handle, &mut result);
+            let h = ArrowResultHandle::from_raw_statement(result, self.clone());
+            if r != ffi::DuckDBSuccess {
+                return Err(h.error());
+            }
+            Ok(h)
+        }
+    }
 }

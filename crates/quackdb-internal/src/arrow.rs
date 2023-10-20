@@ -42,11 +42,11 @@ impl ArrowResultHandle {
     pub unsafe fn from_raw_statement(
         handle: ffi::duckdb_arrow,
         statement: Arc<PreparedStatementHandle>,
-    ) -> Arc<Self> {
-        Arc::new(Self {
+    ) -> Self {
+        Self {
             handle: handle,
             _parent: ArrowResultParent::Statement(statement),
-        })
+        }
     }
     /// # Safety
     /// Does not check if there is actually an error
