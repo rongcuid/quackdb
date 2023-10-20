@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 authors = ["Rongcui Dong <rongcuid@outlook.com>"]
+repository = "https://github/rongcuid/quackdb"
+homepage = "https://github/rongcuid/quackdb"
+
 license = "MIT"
 keywords = ["duckdb", "database", "ffi"]
 categories = ["database"]
