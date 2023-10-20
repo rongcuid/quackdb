@@ -6,6 +6,12 @@ name = "quackdb"
 version = "0.1.0"
 edition = "2021"
 
+authors = ["Rongcui Dong <rongcuid@outlook.com>"]
+readme = "README.md"
+license = "MIT"
+keywords = ["duckdb", "database", "ffi"]
+categories = ["database"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
