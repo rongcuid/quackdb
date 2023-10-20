@@ -1,5 +1,7 @@
 # QuackDB
 
+Current status: core functionality (connect, query, and retrieve results via Arrow) is usable. Anything more advanced requires you to access the internal, unsafe API, or access FFI directly.
+
 ## TODO
 
 * [ ] Proper string type for duckdb: UTF-8, non-null terminated

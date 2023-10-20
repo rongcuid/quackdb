@@ -1,14 +1,11 @@
 mod cutils;
 
-mod appender;
-mod arrow;
-mod config;
-mod connection;
-mod database;
-mod replacement_scan;
-mod statement;
-mod table_function;
-mod types;
+pub mod arrow;
+pub mod config;
+pub mod connection;
+pub mod database;
+pub mod statement;
+pub mod types;
 
 pub fn library_version() -> String {
     quackdb_internal::library_version()
