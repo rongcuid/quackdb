@@ -2,12 +2,14 @@ use std::{ffi::CStr, ops::Deref, sync::Arc};
 
 use crate::{
     arrow::ArrowResultHandle, database::DatabaseHandle, ffi, statement::PreparedStatementHandle,
+    table_function::TableFunctionHandle,
 };
 
 #[derive(Debug)]
 pub struct ConnectionHandle {
     handle: ffi::duckdb_connection,
     _parent: Arc<DatabaseHandle>,
+    _table_functions: Vec<Arc<TableFunctionHandle>>,
 }
 
 impl ConnectionHandle {
@@ -17,6 +19,7 @@ impl ConnectionHandle {
         Arc::new(Self {
             handle: raw,
             _parent: parent,
+            _table_functions: vec![],
         })
     }
     pub fn query(self: &Arc<Self>, sql: &CStr) -> Result<ArrowResultHandle, String> {
@@ -42,6 +45,17 @@ impl ConnectionHandle {
             }
             Ok(PreparedStatementHandle::from_raw(prepare, self.clone()))
         }
+    }
+    pub fn register_table_function(
+        &mut self,
+        function: Arc<TableFunctionHandle>,
+    ) -> Result<(), ()> {
+        let r = unsafe { ffi::duckdb_register_table_function(**self, **function) };
+        if r != ffi::DuckDBSuccess {
+            return Err(());
+        }
+        self._table_functions.push(function);
+        Ok(())
     }
     /// # Safety
     /// Disconnects without checking usage.

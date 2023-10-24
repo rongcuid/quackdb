@@ -30,24 +30,18 @@ Raw FFI handles can be accessed by dereferencing low level structures and used w
 
 ## Roadmap -- 0.3.0
 
-* [ ] Table functions
-* [ ] Replacement scans
-
-
-## Roadmap -- 0.4.0
-
+* [x] Table functions (wrapper)
 * [ ] Row-based iterator
 * [ ] Ergonomic types
 
-## Roadmap (Milestone) -- 0.5.0
+## Roadmap -- Future
 
+* [ ] Table functions (high level)
 * [ ] Clean up error types
 * [ ] Clean up `&self` and `&mut self` receivers
 * [ ] Documentation
 * [ ] Comprehensive tests
-
-## Roadmap -- 0.6.0
-
+* [ ] Replacement scans
 * [ ] Streaming arrow (optional)
 * [ ] Polars support (optional)
 

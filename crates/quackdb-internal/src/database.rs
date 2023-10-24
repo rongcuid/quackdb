@@ -1,4 +1,9 @@
-use std::{ffi::CStr, ops::Deref, ptr, sync::Arc};
+use std::{
+    ffi::{c_void, CStr},
+    ops::Deref,
+    ptr,
+    sync::Arc,
+};
 
 use crate::{config::ConfigHandle, connection::ConnectionHandle, ffi};
 
