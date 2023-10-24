@@ -3,9 +3,9 @@ use std::{
     sync::Arc,
 };
 
-use quackdb_internal::connection::ConnectionHandle;
+use quackdb_internal::{appender::AppenderHandle, connection::ConnectionHandle};
 
-use crate::{arrow::ArrowResult, statement::PreparedStatement};
+use crate::{appender::Appender, arrow::ArrowResult, statement::PreparedStatement};
 
 #[derive(Debug)]
 pub struct Connection {
@@ -20,6 +20,8 @@ pub enum ConnectionError {
     QueryError(String),
     #[error("duckdb_prepare() error: {0}")]
     PrepareError(String),
+    #[error("appender error: {0}")]
+    AppenderError(String),
     #[error(transparent)]
     NulError(#[from] NulError),
 }
@@ -55,6 +57,14 @@ impl Connection {
             .map_err(ConnectionError::PrepareError)
             .map(PreparedStatement::from)
     }
+
+    pub fn appender(&self, schema: Option<&str>, table: &str) -> Result<Appender, ConnectionError> {
+        let schema = schema.map(CString::new).transpose()?;
+        let table = CString::new(table)?;
+        AppenderHandle::create(self.handle.clone(), schema.as_deref(), &table)
+            .map_err(ConnectionError::AppenderError)
+            .map(Appender::from)
+    }
 }
 
 #[cfg(test)]
@@ -64,9 +74,9 @@ mod test {
         datatypes::{DataType, Int32Type},
     };
 
-    use crate::database::Database;
+    use crate::{appender::AppenderError, database::Database};
 
-    use super::Connection;
+    use super::{Connection, ConnectionError};
 
     #[test]
     fn test_connect() {
@@ -187,5 +197,52 @@ mod test {
             })
             .collect::<Vec<_>>();
         assert_eq!(r2, vec![(7, "7".to_owned())]);
+    }
+    fn db3() -> Result<Connection, ConnectionError> {
+        let db = Database::open(None).unwrap();
+        let conn = db.connect().unwrap();
+        conn.query(
+            r"
+            CREATE TABLE tbl(id INTEGER, name TEXT);
+        ",
+        )?;
+        let mut appender = conn.appender(None, "tbl")?;
+        (|| -> Result<(), AppenderError> {
+            appender
+                .append(0)?
+                .append("0")?
+                .end_row()?
+                .append(1)?
+                .append("1")?
+                .end_row()?
+                .append(2)?
+                .append("2")?
+                .end_row()?
+                .append(3)?
+                .append("3")?
+                .end_row()?;
+            Ok(())
+        })()
+        .unwrap();
+
+        Ok(conn)
+    }
+    #[test]
+    fn test_appender_1() {
+        let conn = db3().unwrap();
+        let r = conn
+            .prepare("SELECT * FROM tbl WHERE id >= 3")
+            .unwrap()
+            .execute()
+            .unwrap()
+            .batch_map_into(|rec| {
+                (0..rec.num_rows()).map(move |r| {
+                    let arr1 = rec.column(0).as_primitive::<Int32Type>();
+                    let arr2 = rec.column(1).as_string::<i32>();
+                    (arr1.value(r), arr2.value(r).to_owned())
+                })
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(r, vec![(3, "3".to_owned())]);
     }
 }

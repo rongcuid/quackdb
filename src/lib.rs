@@ -1,5 +1,6 @@
 mod cutils;
 
+pub mod appender;
 pub mod arrow;
 pub mod config;
 pub mod connection;

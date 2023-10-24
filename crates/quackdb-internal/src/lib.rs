@@ -2,6 +2,7 @@ use std::ffi::CStr;
 
 pub mod ffi;
 
+pub mod appender;
 pub mod arrow;
 pub mod config;
 pub mod connection;

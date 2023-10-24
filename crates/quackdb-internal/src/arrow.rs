@@ -1,12 +1,7 @@
-use std::{
-    ffi::{c_void, CStr},
-    marker::PhantomData,
-    ops::Deref,
-    sync::Arc,
-};
+use std::{ffi::CStr, ops::Deref, sync::Arc};
 
 use arrow::{
-    array::{ArrayData, RecordBatch, StructArray},
+    array::{RecordBatch, StructArray},
     error::ArrowError,
     ffi::{from_ffi, FFI_ArrowArray, FFI_ArrowSchema},
 };
