@@ -6,6 +6,8 @@ use std::{
 
 use crate::{ffi, types::LogicalTypeHandle};
 
+use super::BindInfoHandle;
+
 #[derive(Debug)]
 pub struct TableFunctionHandle {
     handle: ffi::duckdb_table_function,
