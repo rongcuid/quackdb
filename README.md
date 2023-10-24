@@ -5,16 +5,23 @@ Current status: core functionality (connect, query, and retrieve results via Arr
 ## Roadmap -- 0.2.0
 
 * [ ] Appender
-* [ ] Table functions
-* [ ] Replacement scans
 * [ ] Proper string type: UTF-8, non-null terminated
-* [ ] Clean up error types
 
 ## Roadmap -- 0.3.0
 
+* [ ] Table functions
+* [ ] Replacement scans
+
+
+## Roadmap -- 0.4.0
+
 * [ ] Row-based iterator
-* [ ] Primitive type conversion
-* [ ] JSON/extended types
+* [ ] Ergonomic types
+
+## Roadmap (Milestone) -- 0.5.0
+
+* [ ] Clean up error types
+* [ ] Streaming arrow (optional)
 * [ ] Polars support (optional)
 
 ## API Level
