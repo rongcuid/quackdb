@@ -4,7 +4,7 @@ members = ["crates/*"]
 [package]
 name = "quackdb"
 description = "Ergonomic binding to DuckDB"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 authors = ["Rongcui Dong <rongcuid@outlook.com>"]
@@ -28,7 +28,7 @@ uuid = "1"
 regex = "1"
 arrow = "47"
 
-quackdb-internal = { path = "./crates/quackdb-internal", version = "0.1.0" }
+quackdb-internal = { path = "./crates/quackdb-internal", version = "0.2.0" }
 
 [dev-dependencies]
 tempfile = "3"
