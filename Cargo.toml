@@ -10,6 +10,7 @@ edition = "2021"
 authors = ["Rongcui Dong <rongcuid@outlook.com>"]
 repository = "https://github/rongcuid/quackdb"
 homepage = "https://github/rongcuid/quackdb"
+documentation = "https://docs.rs/quackdb"
 
 readme = "README.md"
 license = "MIT"
