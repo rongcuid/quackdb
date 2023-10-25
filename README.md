@@ -35,8 +35,10 @@ Raw FFI handles can be accessed by dereferencing low level structures and used w
 | Table Functions   | Almost     | Yes       |
 | Replacement Scans | No         | No        |
 
-* API which doesn't have low level support can still be used via `quackdb-internal::ffi` module.
-* High level table functions are supported, but the main function has to access data chunks directly via FFI
+* API which doesn't have low level support can still be used via `quackdb-internal::ffi` module
+* Query results require working with [arrow](https://docs.rs/arrow/latest/arrow/) `RecordBatch` directly
+* Table functions are supported, but it has to access data chunks directly via FFI
+* Currently, DuckDB types, Arrow types, and Rust types are not reconciled
 
 ### API conventions
 
@@ -46,12 +48,6 @@ Raw FFI handles can be accessed by dereferencing low level structures and used w
 * Low level API dereferences to raw handle
 * Low level API use Rust types
 * Low level API follow DuckDB naming
-
-## Roadmap -- 0.3.0
-
-* [x] Table functions (wrapper)
-* [x] Table functions (almost high level)
-* [ ] ~~Row-based iterator~~
 
 ## Roadmap -- 0.4.0
 * [ ] Fix document build
