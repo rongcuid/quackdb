@@ -8,8 +8,8 @@ version = "0.3.1"
 edition = "2021"
 
 authors = ["Rongcui Dong <rongcuid@outlook.com>"]
-repository = "https://github/rongcuid/quackdb"
-homepage = "https://github/rongcuid/quackdb"
+repository = "https://github.com/rongcuid/quackdb"
+homepage = "https://github.com/rongcuid/quackdb"
 documentation = "https://docs.rs/quackdb"
 
 readme = "README.md"

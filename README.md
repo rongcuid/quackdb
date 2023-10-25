@@ -62,6 +62,7 @@ Raw FFI handles can be accessed by dereferencing low level structures and used w
 
 * [ ] Clean up error types
 * [ ] Clean up `&self` and `&mut self` receivers
+* [ ] Make naming consistent
 * [ ] Documentation
 * [ ] Comprehensive tests
 * [ ] Replacement scans
