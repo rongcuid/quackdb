@@ -10,7 +10,7 @@ pub struct InitInfoHandle {
 }
 
 impl InitInfoHandle {
-    pub fn from_raw(handle: ffi::duckdb_init_info) -> Self {
+    pub unsafe fn from_raw(handle: ffi::duckdb_init_info) -> Self {
         Self { handle }
     }
     pub fn get_extra_info(&self) -> *mut c_void {
@@ -39,7 +39,6 @@ impl InitInfoHandle {
     pub fn set_max_threads(&self, max_threads: u64) {
         unsafe { ffi::duckdb_init_set_max_threads(**self, max_threads) }
     }
-    /// TODO: check the lifetime of `error`
     pub fn set_error(&self, error: &CStr) {
         unsafe { ffi::duckdb_init_set_error(**self, error.as_ptr()) }
     }

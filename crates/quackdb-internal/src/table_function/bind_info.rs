@@ -10,7 +10,7 @@ pub struct BindInfoHandle {
 }
 
 impl BindInfoHandle {
-    pub fn from_raw(handle: ffi::duckdb_bind_info) -> Self {
+    pub unsafe fn from_raw(handle: ffi::duckdb_bind_info) -> Self {
         Self { handle }
     }
     pub fn get_extra_info(&self) -> *mut c_void {
@@ -48,7 +48,6 @@ impl BindInfoHandle {
     pub fn set_cardinality(&self, cardinality: u64, is_exact: bool) {
         unsafe { ffi::duckdb_bind_set_cardinality(**self, cardinality, is_exact) }
     }
-    /// TODO: check the lifetime of `error`
     pub fn set_error(&self, error: &CStr) {
         unsafe { ffi::duckdb_bind_set_error(**self, error.as_ptr()) }
     }

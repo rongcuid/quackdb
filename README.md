@@ -8,7 +8,7 @@ A [DuckDB](https://duckdb.org/) API with ergonomic high-level API without sacrif
   * Database objects are reference-counted
   * This avoids the need to store parent objects explicitly
 * QuackDB does not attempt to mimic [Rusqlite](https://github.com/rusqlite/rusqlite) API
-* QuackDB exposes Arrow API by default
+* QuackDB data access and processing is centered around Arrow
 
 ## API Level
 
@@ -31,12 +31,15 @@ Raw FFI handles can be accessed by dereferencing low level structures and used w
 ## Roadmap -- 0.3.0
 
 * [x] Table functions (wrapper)
-* [ ] Row-based iterator
+* [x] Table functions (almost high level)
+* [ ] ~~Row-based iterator~~
+
+## Roadmap -- 0.4.0
+* [ ] Replacement scan
 * [ ] Ergonomic types
 
 ## Roadmap -- Future
 
-* [ ] Table functions (high level)
 * [ ] Clean up error types
 * [ ] Clean up `&self` and `&mut self` receivers
 * [ ] Documentation

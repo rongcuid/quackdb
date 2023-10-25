@@ -10,7 +10,7 @@ pub struct FunctionInfoHandle {
 }
 
 impl FunctionInfoHandle {
-    pub fn from_raw(handle: ffi::duckdb_function_info) -> Self {
+    pub unsafe fn from_raw(handle: ffi::duckdb_function_info) -> Self {
         Self { handle }
     }
     pub fn get_extra_info(&self) -> *mut c_void {
