@@ -19,6 +19,25 @@ This API can be accessed by the public `handle` field of high-level structures.
 
 Raw FFI handles can be accessed by dereferencing low level structures and used with `libduckdb-sys` functions.
 
+### API Support
+
+| C API             | High Level | Low Level |
+| ----------------- | ---------- | --------- |
+| Database          | Yes        | Yes       |
+| Connection        | Yes        | Yes       |
+| Config            | Yes        | Yes       |
+| Query             | Arrow      | Yes       |
+| Data Chunks       | No         | No        |
+| Values            | No         | No        |
+| Types             | Partial    | Yes       |
+| Statements        | Yes        | Yes       |
+| Appender          | Yes        | Yes       |
+| Table Functions   | Almost     | Yes       |
+| Replacement Scans | No         | No        |
+
+* API which doesn't have low level support can still be used via `quackdb-internal::ffi` module.
+* High level table functions are supported, but the main function has to access data chunks directly via FFI
+
 ### API conventions
 
 * High level API expose low level handle types as `pub handle` field
