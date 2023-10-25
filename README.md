@@ -35,6 +35,7 @@ Raw FFI handles can be accessed by dereferencing low level structures and used w
 * [ ] ~~Row-based iterator~~
 
 ## Roadmap -- 0.4.0
+* [ ] Fix document build
 * [ ] Replacement scan
 * [ ] Ergonomic types
 
