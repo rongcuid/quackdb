@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2023-10-25
+
+- Basic table function API
+  - Low level table function API
+  - High level table function API
+  - Known issue: still requires FFI access to data chunk API
+
 ## [0.2.0] - 2023-10-24
 
 - Appender API
