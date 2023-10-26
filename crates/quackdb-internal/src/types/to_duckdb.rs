@@ -1,7 +1,3 @@
-use arrow::{
-    array::{ArrayData, BooleanArray, PrimitiveArray, StringArray},
-    datatypes::*,
-};
 use libduckdb_sys::duckdb_hugeint;
 use time::{Date, PrimitiveDateTime, Time};
 
