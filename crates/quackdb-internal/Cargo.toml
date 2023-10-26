@@ -25,7 +25,7 @@ libduckdb-sys = "0.9"
 
 cstr = "0.2"
 arrow = { version = "48", features = ["ffi"] }
-time = "^0.3"
+time = "0.3"
 serde = "1"
 serde_json = "1"
 uuid = "1"

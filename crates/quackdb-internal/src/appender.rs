@@ -84,7 +84,7 @@ impl AppenderHandle {
     fn_append! {i32, int32}
     fn_append! {i64, int64}
     pub fn append_hugeint(&self, value: i128) -> Result<(), String> {
-        let h = i128_to_duckdb_hugeint(value);
+        let h = value.into_duckdb();
         self.do_or_error(unsafe { ffi::duckdb_append_hugeint(**self, h) })
     }
     fn_append! {u8, uint8}
@@ -94,15 +94,15 @@ impl AppenderHandle {
     fn_append! {f32, float}
     fn_append! {f64, double}
     pub fn append_date(&self, value: Date) -> Result<(), String> {
-        let d = date_to_duckdb_date(&value);
+        let d = value.into_duckdb();
         self.do_or_error(unsafe { ffi::duckdb_append_date(**self, ffi::duckdb_to_date(d)) })
     }
     pub fn append_time(&self, value: Time) -> Result<(), String> {
-        let t = time_to_duckdb_time(&value);
+        let t = value.into_duckdb();
         self.do_or_error(unsafe { ffi::duckdb_append_time(**self, ffi::duckdb_to_time(t)) })
     }
     pub fn append_timestamp(&self, value: PrimitiveDateTime) -> Result<(), String> {
-        let dt = datetime_to_duckdb_timestamp(&value);
+        let dt = value.into_duckdb();
         self.do_or_error(unsafe {
             ffi::duckdb_append_timestamp(**self, ffi::duckdb_to_timestamp(dt))
         })

@@ -93,7 +93,7 @@ impl PreparedStatementHandle {
         Ok(())
     }
     pub unsafe fn bind_i128(&self, param_idx: u64, val: i128) -> Result<(), ()> {
-        let hugeint = i128_to_duckdb_hugeint(val);
+        let hugeint = val.into_duckdb();
         if ffi::duckdb_bind_hugeint(self.handle, param_idx, hugeint) != ffi::DuckDBSuccess {
             return Err(());
         }
@@ -143,7 +143,7 @@ impl PreparedStatementHandle {
         Ok(())
     }
     pub unsafe fn bind_date(&self, param_idx: u64, val: Date) -> Result<(), ()> {
-        let date = date_to_duckdb_date(&val);
+        let date = val.into_duckdb();
         if ffi::duckdb_bind_date(self.handle, param_idx, ffi::duckdb_to_date(date))
             != ffi::DuckDBSuccess
         {
@@ -152,7 +152,7 @@ impl PreparedStatementHandle {
         Ok(())
     }
     pub unsafe fn bind_time(&self, param_idx: u64, val: Time) -> Result<(), ()> {
-        let time = time_to_duckdb_time(&val);
+        let time = val.into_duckdb();
         if ffi::duckdb_bind_time(self.handle, param_idx, ffi::duckdb_to_time(time))
             != ffi::DuckDBSuccess
         {
@@ -161,7 +161,7 @@ impl PreparedStatementHandle {
         Ok(())
     }
     pub unsafe fn bind_timestamp(&self, param_idx: u64, val: PrimitiveDateTime) -> Result<(), ()> {
-        let ts = datetime_to_duckdb_timestamp(&val);
+        let ts = val.into_duckdb();
         if ffi::duckdb_bind_timestamp(self.handle, param_idx, ffi::duckdb_to_timestamp(ts))
             != ffi::DuckDBSuccess
         {
