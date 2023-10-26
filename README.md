@@ -2,7 +2,7 @@
 
 A [DuckDB](https://duckdb.org/) API with ergonomic high-level API without sacrificing the ability to go low level.
 
-## Compared to `duckdb-rs`
+## Compared to [duckdb-rs](https://github.com/duckdb/duckdb-rs)
 
 * QuackDB avoids lifetime on API where possible
   * Database objects are reference-counted
@@ -50,7 +50,7 @@ Raw FFI handles can be accessed by dereferencing low level structures and used w
 * Low level API follow DuckDB naming
 
 ## Roadmap -- 0.4.0
-* [ ] Fix document build
+* [x] Fix document build
 * [ ] Replacement scan
 * [ ] Ergonomic types
 

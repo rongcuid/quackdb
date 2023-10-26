@@ -10,7 +10,6 @@ pub mod database;
 pub mod statement;
 pub mod table_function;
 pub mod types;
-pub mod value;
 
 pub fn library_version() -> String {
     unsafe {
