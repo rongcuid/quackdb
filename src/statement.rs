@@ -1,7 +1,10 @@
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 use quackdb_conversion::BindParam;
-use quackdb_internal::statement::PreparedStatementHandle;
+use quackdb_internal::{
+    ffi,
+    handles::{ArrowResultHandle, PreparedStatementHandle},
+};
 
 use crate::arrow::ArrowResult;
 
@@ -24,6 +27,24 @@ pub enum PreparedStatementError {
 }
 
 impl PreparedStatement {
+    pub fn nparams(&self) -> u64 {
+        unsafe { ffi::duckdb_nparams(**self) }
+    }
+    // /// # Safety
+    // /// * `param_idx` must be in range
+    // pub unsafe fn param_type(&self, param_idx: u64) -> TypeId {
+    //     let ty = ffi::duckdb_param_type(self.handle, param_idx);
+    //     TypeId::from_raw(ty).expect("invalid duckdb type")
+    // }
+    pub fn clear_bindings(&self) -> Result<(), PreparedStatementError> {
+        unsafe {
+            let res = ffi::duckdb_clear_bindings(**self);
+            if res != ffi::DuckDBSuccess {
+                return Err(PreparedStatementError::ClearBindingsError);
+            }
+            Ok(())
+        }
+    }
     /// Bind one parameter at the next position
     pub fn bind<T: BindParam>(&mut self, param: T) -> Result<&mut Self, PreparedStatementError> {
         self.bind_at(param, self.current_index)?;
@@ -35,7 +56,6 @@ impl PreparedStatement {
         self.set_position(1)
     }
     pub fn set_position(&mut self, param_idx: u64) -> &mut Self {
-        let _nparams = self.handle.nparams();
         self.current_index = param_idx;
         self
     }
@@ -45,18 +65,32 @@ impl PreparedStatement {
         param: T,
         param_idx: u64,
     ) -> Result<(), PreparedStatementError> {
-        let nparams = self.handle.nparams();
+        let nparams = self.nparams();
         if !(1..=nparams).contains(&param_idx) {
             return Err(PreparedStatementError::BindOutOfBound(param_idx, nparams));
         }
-        unsafe { param.bind_param_unchecked(&self.handle, param_idx) }
+        unsafe { param.bind_param_unchecked(**self, param_idx) }
             .map_err(|e| PreparedStatementError::BindError(e, param_idx))
     }
     pub fn execute(&self) -> Result<ArrowResult, PreparedStatementError> {
-        self.handle
-            .execute()
-            .map_err(PreparedStatementError::ExecuteError)
-            .map(ArrowResult::from)
+        unsafe {
+            let mut result: ffi::duckdb_arrow = std::mem::zeroed();
+            let r = ffi::duckdb_execute_prepared_arrow(**self, &mut result);
+            let h: ArrowResult =
+                ArrowResultHandle::from_raw_statement(result, self.handle.clone()).into();
+            if r != ffi::DuckDBSuccess {
+                return Err(PreparedStatementError::ExecuteError(h.error()));
+            }
+            Ok(h.into())
+        }
+    }
+}
+
+impl Deref for PreparedStatement {
+    type Target = ffi::duckdb_prepared_statement;
+
+    fn deref(&self) -> &Self::Target {
+        &self.handle
     }
 }
 

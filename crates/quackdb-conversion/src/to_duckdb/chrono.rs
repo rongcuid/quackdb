@@ -1,5 +1,5 @@
 use chrono::prelude::*;
-use quackdb_internal::{ffi, types::TypeId};
+use quackdb_internal::{ffi, type_id::TypeId};
 
 use super::{FromDuckDb, IntoDuckDb, ToDuckDbType};
 

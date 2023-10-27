@@ -2,7 +2,7 @@ use std::ffi::CStr;
 
 use chrono::prelude::*;
 use paste::paste;
-use quackdb_internal::statement::PreparedStatementHandle;
+use quackdb_internal::ffi;
 
 use crate::to_duckdb::IntoDuckDb;
 
@@ -12,7 +12,7 @@ pub unsafe trait BindParam {
     /// Does not need to check whether the type is correct or whether index is in bounds.
     unsafe fn bind_param_unchecked(
         self,
-        stmt: &PreparedStatementHandle,
+        stmt: ffi::duckdb_prepared_statement,
         param_idx: u64,
     ) -> Result<(), &'static str>;
 }
@@ -24,12 +24,16 @@ where
 {
     unsafe fn bind_param_unchecked(
         self,
-        stmt: &PreparedStatementHandle,
+        stmt: ffi::duckdb_prepared_statement,
         param_idx: u64,
     ) -> Result<(), &'static str> {
         match self {
             Some(t) => t.bind_param_unchecked(stmt, param_idx),
-            None => stmt.bind_null(param_idx).map_err(|_| "duckdb_bind_null()"),
+            None => match ffi::duckdb_bind_null(stmt, param_idx) {
+                ffi::DuckDBSuccess => Ok(()),
+                ffi::DuckDBError => Err("duckdb_bind_null()"),
+                _ => unreachable!(),
+            },
         }
     }
 }
@@ -37,7 +41,7 @@ where
 macro_rules! impl_bind_param_for_primitive {
     ($ty:ty, $duck_ty:ty) => {
         paste! {
-            impl_bind_param_for_primitive! {$ty, $duck_ty, [<bind_ $duck_ty>]}
+            impl_bind_param_for_primitive! {$ty, $duck_ty, [<duckdb_bind_ $duck_ty>]}
         }
     };
     ($ty:ty, $duck_ty:ty, $method:ident) => {
@@ -49,10 +53,14 @@ macro_rules! impl_bind_param_for_primitive {
         unsafe impl BindParam for $ty {
             unsafe fn bind_param_unchecked(
                 self,
-                stmt: &PreparedStatementHandle,
+                stmt: ffi::duckdb_prepared_statement,
                 param_idx: u64,
             ) -> Result<(), &'static str> {
-                stmt.$method(param_idx, self).map_err(|_| $err_msg)
+                match ffi::$method(stmt, param_idx, self) {
+                    ffi::DuckDBSuccess => Ok(()),
+                    ffi::DuckDBError => Err($err_msg),
+                    _ => unreachable!()
+                }
             }
         }
     };
@@ -61,7 +69,7 @@ macro_rules! impl_bind_param_for_primitive {
 macro_rules! impl_bind_param {
     ($ty:ty, $duck_ty:ty) => {
         paste! {
-            impl_bind_param! {$ty, $duck_ty, [<bind_ $duck_ty>]}
+            impl_bind_param! {$ty, $duck_ty, [<duckdb_bind_ $duck_ty>]}
         }
     };
     ($ty:ty, $duck_ty:ty, $method:ident) => {
@@ -73,17 +81,20 @@ macro_rules! impl_bind_param {
         unsafe impl BindParam for $ty {
             unsafe fn bind_param_unchecked(
                 self,
-                stmt: &PreparedStatementHandle,
+                stmt: ffi::duckdb_prepared_statement,
                 param_idx: u64,
             ) -> Result<(), &'static str> {
-                stmt.$method(param_idx, self.into_duckdb())
-                    .map_err(|_| $err_msg)
+                match ffi::$method(stmt, param_idx, self.into_duckdb()) {
+                    ffi::DuckDBSuccess => Ok(()),
+                    ffi::DuckDBError => Err($err_msg),
+                    _ => unreachable!(),
+                }
             }
         }
     };
 }
 
-impl_bind_param_for_primitive! {bool, bool}
+impl_bind_param_for_primitive! {bool, boolean}
 impl_bind_param_for_primitive! {i8, int8}
 impl_bind_param_for_primitive! {i16, int16}
 impl_bind_param_for_primitive! {i32, int32}
@@ -95,31 +106,77 @@ impl_bind_param_for_primitive! {u32, uint32}
 impl_bind_param_for_primitive! {u64, uint64}
 impl_bind_param_for_primitive! {f32, float}
 impl_bind_param_for_primitive! {f64, double}
-impl_bind_param_for_primitive! {&CStr, varchar}
-impl_bind_param_for_primitive! {&str, varchar_length}
 impl_bind_param! {NaiveDate, date}
 impl_bind_param! {NaiveTime, time}
 impl_bind_param! {NaiveDateTime, timestamp}
-impl_bind_param_for_primitive! {&[u8], blob}
+
+unsafe impl BindParam for &CStr {
+    unsafe fn bind_param_unchecked(
+        self,
+        stmt: ffi::duckdb_prepared_statement,
+        param_idx: u64,
+    ) -> Result<(), &'static str> {
+        match ffi::duckdb_bind_varchar(stmt, param_idx, self.as_ptr()) {
+            ffi::DuckDBSuccess => Ok(()),
+            ffi::DuckDBError => Err("duckdb_bind_varchar()"),
+            _ => unreachable!(),
+        }
+    }
+}
+
+unsafe impl BindParam for &str {
+    unsafe fn bind_param_unchecked(
+        self,
+        stmt: ffi::duckdb_prepared_statement,
+        param_idx: u64,
+    ) -> Result<(), &'static str> {
+        match ffi::duckdb_bind_varchar_length(
+            stmt,
+            param_idx,
+            self.as_ptr().cast(),
+            self.len() as u64,
+        ) {
+            ffi::DuckDBSuccess => Ok(()),
+            ffi::DuckDBError => Err("duckdb_bind_varchar_length()"),
+            _ => unreachable!(),
+        }
+    }
+}
+
+unsafe impl BindParam for &[u8] {
+    unsafe fn bind_param_unchecked(
+        self,
+        stmt: ffi::duckdb_prepared_statement,
+        param_idx: u64,
+    ) -> Result<(), &'static str> {
+        match ffi::duckdb_bind_blob(stmt, param_idx, self.as_ptr().cast(), self.len() as u64) {
+            ffi::DuckDBSuccess => Ok(()),
+            ffi::DuckDBError => Err("duckdb_bind_blob()"),
+            _ => unreachable!(),
+        }
+    }
+}
 
 unsafe impl BindParam for String {
     unsafe fn bind_param_unchecked(
         self,
-        stmt: &PreparedStatementHandle,
+        stmt: ffi::duckdb_prepared_statement,
         param_idx: u64,
     ) -> Result<(), &'static str> {
-        stmt.bind_varchar_length(param_idx, &self)
-            .map_err(|_| "duckdb_bind_varchar_length()")
+        self.as_str().bind_param_unchecked(stmt, param_idx)
     }
 }
 
 unsafe impl<Tz: TimeZone> BindParam for DateTime<Tz> {
     unsafe fn bind_param_unchecked(
         self,
-        stmt: &PreparedStatementHandle,
+        stmt: ffi::duckdb_prepared_statement,
         param_idx: u64,
     ) -> Result<(), &'static str> {
-        stmt.bind_timestamp(param_idx, self.into_duckdb())
-            .map_err(|_| "duckdb_bind_timestamp()")
+        match ffi::duckdb_bind_timestamp(stmt, param_idx, self.into_duckdb()) {
+            ffi::DuckDBSuccess => Ok(()),
+            ffi::DuckDBError => Err("duckdb_bind_timestamp()"),
+            _ => unreachable!(),
+        }
     }
 }
