@@ -23,17 +23,6 @@ impl ConnectionHandle {
         })
     }
 
-    pub fn register_table_function(
-        &mut self,
-        function: Arc<TableFunctionHandle>,
-    ) -> Result<(), ()> {
-        let r = unsafe { ffi::duckdb_register_table_function(**self, **function) };
-        if r != ffi::DuckDBSuccess {
-            return Err(());
-        }
-        self._table_functions.push(function);
-        Ok(())
-    }
     /// # Safety
     /// * Make sure any child objects are closed
     /// * Do not use this object afterwards

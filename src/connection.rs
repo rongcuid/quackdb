@@ -81,6 +81,17 @@ impl Connection {
             .map_err(ConnectionError::AppenderError)
             .map(Appender::from)
     }
+    // pub fn register_table_function(
+    //     &mut self,
+    //     function: Arc<TableFunctionHandle>,
+    // ) -> Result<(), ()> {
+    //     let r = unsafe { ffi::duckdb_register_table_function(**self, **function) };
+    //     if r != ffi::DuckDBSuccess {
+    //         return Err(());
+    //     }
+    //     self._table_functions.push(function);
+    //     Ok(())
+    // }
 }
 
 impl Deref for Connection {
