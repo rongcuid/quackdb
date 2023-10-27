@@ -1,9 +1,6 @@
 mod primitive;
 pub use primitive::*;
-#[cfg(feature = "time")]
-mod time;
-#[cfg(feature = "time")]
-pub use time::*;
+
 mod chrono;
 pub use chrono::*;
 
