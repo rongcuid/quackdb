@@ -57,6 +57,7 @@ Raw FFI handles can be accessed by dereferencing low level structures and used w
   * [x] Chrono to/from DuckDb
   * [ ] Rust primitive to Arrow 
   * [ ] Chrono to Arrow
+* [ ] Try to remove intermediate API?
 
 ## Roadmap -- Future
 
