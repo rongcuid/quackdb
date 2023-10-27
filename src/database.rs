@@ -58,7 +58,7 @@ impl Database {
 
     pub fn connect(&self) -> Result<Connection, DatabaseError> {
         let mut handle = ptr::null_mut();
-        let r = unsafe { ffi::duckdb_connect(***self, &mut handle) };
+        let r = unsafe { ffi::duckdb_connect(**self, &mut handle) };
         if r != ffi::DuckDBSuccess {
             return Err(DatabaseError::ConnectError);
         }
@@ -67,7 +67,7 @@ impl Database {
 }
 
 impl Deref for Database {
-    type Target = DatabaseHandle;
+    type Target = ffi::duckdb_database;
 
     fn deref(&self) -> &Self::Target {
         &self.handle

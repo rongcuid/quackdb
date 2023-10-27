@@ -38,11 +38,11 @@ impl From<Arc<ConnectionHandle>> for Connection {
 
 impl Connection {
     pub fn interrupt(&self) {
-        unsafe { ffi::duckdb_interrupt(***self) }
+        unsafe { ffi::duckdb_interrupt(**self) }
     }
 
     pub fn query_progress(&self) -> f64 {
-        unsafe { ffi::duckdb_query_progress(***self) }
+        unsafe { ffi::duckdb_query_progress(**self) }
     }
 
     /// Perform a query and return the handle.
@@ -50,7 +50,7 @@ impl Connection {
         let cstr = CString::new(sql)?;
         unsafe {
             let mut result: ffi::duckdb_arrow = std::mem::zeroed();
-            let r = ffi::duckdb_query_arrow(***self, cstr.as_ptr(), &mut result);
+            let r = ffi::duckdb_query_arrow(**self, cstr.as_ptr(), &mut result);
             let h = ArrowResultHandle::from_raw_connection(result, self.handle.clone());
             if r != ffi::DuckDBSuccess {
                 return Err(ConnectionError::QueryError(h.error()));
@@ -63,7 +63,7 @@ impl Connection {
         let cstr = CString::new(query)?;
         unsafe {
             let mut prepare: ffi::duckdb_prepared_statement = std::mem::zeroed();
-            let res = ffi::duckdb_prepare(***self, cstr.as_ptr(), &mut prepare);
+            let res = ffi::duckdb_prepare(**self, cstr.as_ptr(), &mut prepare);
             if res != ffi::DuckDBSuccess {
                 let err = ffi::duckdb_prepare_error(prepare);
                 let err = CStr::from_ptr(err).to_string_lossy().to_owned().to_string();
@@ -84,7 +84,7 @@ impl Connection {
 }
 
 impl Deref for Connection {
-    type Target = ConnectionHandle;
+    type Target = ffi::duckdb_connection;
 
     fn deref(&self) -> &Self::Target {
         &self.handle
