@@ -51,13 +51,14 @@ Raw FFI handles can be accessed by dereferencing low level structures and used w
 
 ## Roadmap -- 0.4.0
 * [x] Fix document build
-* [ ] Replacement scan
-* [ ] Ergonomic types
+* [x] DuckDb types conversion
   * [x] Rust primitive types to/from DuckDb types
   * [x] Chrono to/from DuckDb
-  * [ ] Rust primitive to Arrow 
-  * [ ] Chrono to Arrow
+
+## Roadmap -- 0.5.0
 * [ ] Try to remove intermediate API?
+* [ ] Serde support
+* [ ] Replacement scan
 
 ## Roadmap -- Future
 

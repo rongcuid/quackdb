@@ -1,6 +1,6 @@
 [package]
 name = "quackdb-conversion"
-version = "0.4.0-dev"
+version = "0.4.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -9,7 +9,7 @@ edition = "2021"
 # time = ["dep:time"]
 
 [dependencies]
-quackdb-internal = { path = "../quackdb-internal", version = "0.4.0-dev" }
+quackdb-internal = { path = "../quackdb-internal", version = "0.4.0" }
 
 paste = "1"
 
