@@ -1,8 +1,7 @@
-use std::{ffi::CStr, time::Duration};
+use std::ffi::CStr;
 
 use paste::paste;
 use quackdb_internal::{appender::AppenderHandle, statement::PreparedStatementHandle};
-use time::{Date, PrimitiveDateTime, Time};
 
 /// Values that can bind to prepared statements
 pub unsafe trait BindParam {

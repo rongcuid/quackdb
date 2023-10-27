@@ -153,7 +153,7 @@ where
                     .set_bind_data(Box::into_raw(b).cast(), Some(destroy_box::<B>));
             }
             Err(e) => {
-                let err = e.replace("\0", r"\0");
+                let err = e.replace('\0', r"\0");
                 handle
                     .handle
                     .set_error(&CString::new(err).expect("null character"));
@@ -183,7 +183,7 @@ where
                     .set_init_data(Box::into_raw(b).cast(), Some(destroy_box::<B>));
             }
             Err(e) => {
-                let err = e.replace("\0", r"\0");
+                let err = e.replace('\0', r"\0");
                 handle
                     .handle
                     .set_error(&CString::new(err).expect("null character"));
@@ -213,7 +213,7 @@ where
                         .set_init_data(Box::into_raw(b).cast(), Some(destroy_box::<B>));
                 }
                 Err(e) => {
-                    let err = e.replace("\0", r"\0");
+                    let err = e.replace('\0', r"\0");
                     handle
                         .handle
                         .set_error(&CString::new(err).expect("null character"));
@@ -248,7 +248,7 @@ extern "C" fn function<B, I, LI, E>(
             &(*extra).extra,
         );
         if let Err(e) = result {
-            let err = e.replace("\0", r"\0");
+            let err = e.replace('\0', r"\0");
             handle
                 .handle
                 .set_error(&CString::new(err).expect("null character"));

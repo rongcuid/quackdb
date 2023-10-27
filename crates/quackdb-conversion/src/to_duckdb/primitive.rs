@@ -1,0 +1,52 @@
+use quackdb_internal::{
+    ffi,
+    types::{i128_to_hugeint, TypeId},
+};
+
+use super::{FromDuckDb, IntoDuckDb, ToDuckDbType};
+
+macro_rules! impl_to_duckdb_for_primitive {
+    ($ty:ty, $type_id:expr) => {
+        impl ToDuckDbType for $ty {
+            type DuckDbRepresentation = $ty;
+            const DUCKDB_TYPE_ID: TypeId = $type_id;
+        }
+        impl IntoDuckDb for $ty {
+            fn into_duckdb(self) -> Self::DuckDbRepresentation {
+                self
+            }
+        }
+        impl FromDuckDb for $ty {
+            fn from_duckdb(value: Self::DuckDbRepresentation) -> Self {
+                value
+            }
+        }
+    };
+}
+
+impl_to_duckdb_for_primitive! { bool, TypeId::Boolean }
+impl_to_duckdb_for_primitive! { i8, TypeId::TinyInt }
+impl_to_duckdb_for_primitive! { i16, TypeId::SmallInt }
+impl_to_duckdb_for_primitive! { i32, TypeId::Integer }
+impl_to_duckdb_for_primitive! { i64, TypeId::BigInt }
+impl_to_duckdb_for_primitive! { u8, TypeId::UTinyInt }
+impl_to_duckdb_for_primitive! { u16, TypeId::USmallInt }
+impl_to_duckdb_for_primitive! { u32, TypeId::UInteger }
+impl_to_duckdb_for_primitive! { u64, TypeId::UBigInt }
+
+impl ToDuckDbType for i128 {
+    const DUCKDB_TYPE_ID: TypeId = TypeId::HugeInt;
+
+    type DuckDbRepresentation = ffi::duckdb_hugeint;
+}
+
+impl IntoDuckDb for i128 {
+    fn into_duckdb(self) -> Self::DuckDbRepresentation {
+        i128_to_hugeint(self)
+    }
+}
+impl FromDuckDb for i128 {
+    fn from_duckdb(value: Self::DuckDbRepresentation) -> Self {
+        (value.upper as i128) << 64 & value.lower as i128
+    }
+}

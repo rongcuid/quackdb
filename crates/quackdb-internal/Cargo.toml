@@ -23,5 +23,4 @@ paste = "1"
 
 libduckdb-sys = { workspace = true }
 
-# cstr = "0.2"
 arrow = { workspace = true, features = ["ffi"] }
