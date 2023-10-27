@@ -14,26 +14,10 @@ impl Deref for ConfigHandle {
 }
 
 impl ConfigHandle {
-    pub fn create() -> Result<Self, ()> {
-        unsafe {
-            let mut config: ffi::duckdb_config = ptr::null_mut();
-            if ffi::duckdb_create_config(&mut config) != ffi::DuckDBSuccess {
-                return Err(());
-            }
-            Ok(Self::from_raw(config))
-        }
-    }
     /// # Safety
     /// Takes ownership
     pub unsafe fn from_raw(raw: ffi::duckdb_config) -> Self {
         Self(raw)
-    }
-    pub fn set(&self, key: &CStr, value: &CStr) -> Result<(), ()> {
-        let state = unsafe { ffi::duckdb_set_config(self.0, key.as_ptr(), value.as_ptr()) };
-        if state != ffi::DuckDBSuccess {
-            return Err(());
-        }
-        Ok(())
     }
 }
 

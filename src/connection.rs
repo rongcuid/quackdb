@@ -1,15 +1,19 @@
 use std::{
-    ffi::{CString, NulError},
+    ffi::{CStr, CString, NulError},
+    ops::Deref,
     sync::Arc,
 };
 
-use quackdb_internal::{appender::AppenderHandle, connection::ConnectionHandle};
+use quackdb_internal::{
+    appender::AppenderHandle, arrow::ArrowResultHandle, connection::ConnectionHandle, ffi,
+    statement::PreparedStatementHandle,
+};
 
 use crate::{appender::Appender, arrow::ArrowResult, statement::PreparedStatement};
 
 #[derive(Debug)]
 pub struct Connection {
-    pub handle: Arc<ConnectionHandle>,
+    handle: Arc<ConnectionHandle>,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -33,29 +37,41 @@ impl From<Arc<ConnectionHandle>> for Connection {
 }
 
 impl Connection {
-    // pub fn interrupt(&self) {
-    //     unsafe { unimplemented!("Not in libduckdb-sys yet") }
-    // }
+    pub fn interrupt(&self) {
+        unsafe { ffi::duckdb_interrupt(***self) }
+    }
 
-    // pub fn query_progress(&self) {
-    //     unsafe { unimplemented!("Not in libduckdb-sys yet") }
-    // }
+    pub fn query_progress(&self) -> f64 {
+        unsafe { ffi::duckdb_query_progress(***self) }
+    }
 
     /// Perform a query and return the handle.
     pub fn query(&self, sql: &str) -> Result<ArrowResult, ConnectionError> {
         let cstr = CString::new(sql)?;
-        self.handle
-            .query(&cstr)
-            .map_err(ConnectionError::QueryError)
-            .map(ArrowResult::from)
+        unsafe {
+            let mut result: ffi::duckdb_arrow = std::mem::zeroed();
+            let r = ffi::duckdb_query_arrow(***self, cstr.as_ptr(), &mut result);
+            let h = ArrowResultHandle::from_raw_connection(result, self.handle.clone());
+            if r != ffi::DuckDBSuccess {
+                return Err(ConnectionError::QueryError(h.error()));
+            }
+            Ok(h.into())
+        }
     }
 
     pub fn prepare(&self, query: &str) -> Result<PreparedStatement, ConnectionError> {
         let cstr = CString::new(query)?;
-        self.handle
-            .prepare(&cstr)
-            .map_err(ConnectionError::PrepareError)
-            .map(PreparedStatement::from)
+        unsafe {
+            let mut prepare: ffi::duckdb_prepared_statement = std::mem::zeroed();
+            let res = ffi::duckdb_prepare(***self, cstr.as_ptr(), &mut prepare);
+            if res != ffi::DuckDBSuccess {
+                let err = ffi::duckdb_prepare_error(prepare);
+                let err = CStr::from_ptr(err).to_string_lossy().to_owned().to_string();
+                ffi::duckdb_destroy_prepare(&mut prepare);
+                return Err(ConnectionError::PrepareError(err));
+            }
+            Ok(PreparedStatementHandle::from_raw(prepare, self.handle.clone()).into())
+        }
     }
 
     pub fn appender(&self, schema: Option<&str>, table: &str) -> Result<Appender, ConnectionError> {
@@ -64,6 +80,14 @@ impl Connection {
         AppenderHandle::create(self.handle.clone(), schema.as_deref(), &table)
             .map_err(ConnectionError::AppenderError)
             .map(Appender::from)
+    }
+}
+
+impl Deref for Connection {
+    type Target = ConnectionHandle;
+
+    fn deref(&self) -> &Self::Target {
+        &self.handle
     }
 }
 

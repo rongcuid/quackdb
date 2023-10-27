@@ -1,12 +1,18 @@
-use std::{ffi::NulError, path::Path, sync::Arc};
+use std::{
+    ffi::{CStr, NulError},
+    ops::Deref,
+    path::Path,
+    ptr,
+    sync::Arc,
+};
 
-use quackdb_internal::database::DatabaseHandle;
+use quackdb_internal::{connection::ConnectionHandle, database::DatabaseHandle, ffi};
 
 use crate::{config::Config, connection::Connection, cutils::option_path_to_cstring};
 
 #[derive(Debug)]
 pub struct Database {
-    pub handle: Arc<DatabaseHandle>,
+    handle: Arc<DatabaseHandle>,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -28,22 +34,43 @@ impl From<Arc<DatabaseHandle>> for Database {
 impl Database {
     /// Open a database. `Some(path)` opens a file, while `None` opens an in-memory db.
     pub fn open(path: Option<&Path>) -> Result<Self, DatabaseError> {
-        Self::open_ext(path, &Config::default())
+        Self::open_ext(path, None)
     }
 
     /// Extended open
-    pub fn open_ext(path: Option<&Path>, config: &Config) -> Result<Database, DatabaseError> {
+    pub fn open_ext(path: Option<&Path>, config: Option<&Config>) -> Result<Self, DatabaseError> {
         let c_path = option_path_to_cstring(path)?;
-        DatabaseHandle::open_ext(c_path.as_deref(), config.handle.as_ref())
-            .map_err(DatabaseError::OpenError)
-            .map(Self::from)
+        let mut db: ffi::duckdb_database = ptr::null_mut();
+        let mut err = ptr::null_mut();
+        let path = c_path.map(|p| p.as_ptr()).unwrap_or(ptr::null());
+        let config = config.map(|c| ***c).unwrap_or(ptr::null_mut());
+        let r = unsafe { ffi::duckdb_open_ext(path, &mut db, config, &mut err) };
+        if r != ffi::DuckDBSuccess {
+            let err_cstr = unsafe { CStr::from_ptr(err) };
+            let err_str = err_cstr.to_string_lossy().to_string();
+            unsafe { ffi::duckdb_free(err as _) };
+            return Err(DatabaseError::OpenError(err_str));
+        }
+        Ok(Self {
+            handle: unsafe { DatabaseHandle::from_raw(db) },
+        })
     }
 
     pub fn connect(&self) -> Result<Connection, DatabaseError> {
-        self.handle
-            .connect()
-            .map(Connection::from)
-            .map_err(|_| DatabaseError::ConnectError)
+        let mut handle = ptr::null_mut();
+        let r = unsafe { ffi::duckdb_connect(***self, &mut handle) };
+        if r != ffi::DuckDBSuccess {
+            return Err(DatabaseError::ConnectError);
+        }
+        Ok(unsafe { ConnectionHandle::from_raw(handle, self.handle.clone()) }.into())
+    }
+}
+
+impl Deref for Database {
+    type Target = DatabaseHandle;
+
+    fn deref(&self) -> &Self::Target {
+        &self.handle
     }
 }
 
@@ -62,11 +89,19 @@ mod test {
     fn test_open_failure() -> Result<(), DatabaseError> {
         let filename = "no_such_file.db";
         let result = Database::open_ext(
-            // Some(Path::new(filename)).as_deref(),
             Some(filename.as_ref()),
-            Config::default().set("access_mode", "read_only").unwrap(),
+            Some(
+                Config::new()
+                    .unwrap()
+                    .set("access_mode", "read_only")
+                    .unwrap(),
+            ),
         );
-        assert!(matches!(result, Err(DatabaseError::OpenError(_))));
+        match result {
+            Ok(_) => panic!("Should fail"),
+            Err(DatabaseError::OpenError(_)) => (),
+            Err(e) => panic!("Unexpected error: {e}"),
+        }
         Ok(())
     }
 }

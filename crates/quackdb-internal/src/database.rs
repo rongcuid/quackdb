@@ -1,11 +1,6 @@
-use std::{
-    ffi::{c_void, CStr},
-    ops::Deref,
-    ptr,
-    sync::Arc,
-};
+use std::{ops::Deref, ptr, sync::Arc};
 
-use crate::{config::ConfigHandle, connection::ConnectionHandle, ffi};
+use crate::{connection::ConnectionHandle, ffi};
 
 #[derive(Debug)]
 pub struct DatabaseHandle(ffi::duckdb_database);
@@ -16,40 +11,10 @@ impl DatabaseHandle {
     pub unsafe fn from_raw(raw: ffi::duckdb_database) -> Arc<Self> {
         Arc::new(Self(raw))
     }
-    pub unsafe fn open(path: Option<&CStr>) -> Result<Arc<Self>, String> {
-        Self::open_ext(path, None)
-    }
-    pub fn open_ext(
-        path: Option<&CStr>,
-        config: Option<&ConfigHandle>,
-    ) -> Result<Arc<Self>, String> {
-        unsafe {
-            let mut db: ffi::duckdb_database = ptr::null_mut();
-            let mut err = ptr::null_mut();
-            let path = path.map(|p| p.as_ptr()).unwrap_or(ptr::null());
-            let config = config.map(|c| **c).unwrap_or(ptr::null_mut());
-            let r = ffi::duckdb_open_ext(path, &mut db, config, &mut err);
-            if r != ffi::DuckDBSuccess {
-                let err_cstr = CStr::from_ptr(err);
-                let err_str = err_cstr.to_string_lossy().to_string();
-                ffi::duckdb_free(err as _);
-                return Err(err_str);
-            }
-            Ok(Self::from_raw(db))
-        }
-    }
 
-    pub fn connect(self: &Arc<Self>) -> Result<Arc<ConnectionHandle>, ()> {
-        let mut handle = ptr::null_mut();
-        let r = unsafe { ffi::duckdb_connect(self.0, &mut handle) };
-        if r != ffi::DuckDBSuccess {
-            return Err(());
-        }
-        Ok(unsafe { ConnectionHandle::from_raw(handle, self.clone()) })
-    }
     /// # Safety
-    /// Force close connection without checking for usage.
-    /// Normally you should let Rust handle this.
+    /// * Ensure all children are closed
+    /// * Don't use this object afterwards
     pub unsafe fn close(&mut self) {
         ffi::duckdb_close(&mut self.0);
     }

@@ -1,11 +1,14 @@
-use std::ffi::{CString, NulError};
+use std::{
+    ffi::{CString, NulError},
+    ops::Deref,
+};
 
-use quackdb_internal::config::ConfigHandle;
+use quackdb_internal::{config::ConfigHandle, ffi};
 
 /// duckdb configuration
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Config {
-    pub handle: Option<ConfigHandle>,
+    handle: ConfigHandle,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -19,21 +22,34 @@ pub enum ConfigError {
 }
 
 impl Config {
-    pub fn set<T: ToString>(&mut self, key: &str, value: T) -> Result<&mut Config, ConfigError> {
-        let value = value.to_string();
-        if self.handle.is_none() {
-            if let Ok(config) = ConfigHandle::create() {
-                self.handle = Some(config);
-            } else {
+    pub fn new() -> Result<Self, ConfigError> {
+        unsafe {
+            let mut config: ffi::duckdb_config = std::ptr::null_mut();
+            if ffi::duckdb_create_config(&mut config) != ffi::DuckDBSuccess {
                 return Err(ConfigError::CreateError);
             }
+            Ok(Self {
+                handle: ConfigHandle::from_raw(config),
+            })
         }
+    }
+    pub fn set<T: ToString>(&mut self, key: &str, value: T) -> Result<&mut Config, ConfigError> {
+        let value = value.to_string();
         let c_key = CString::new(key)?;
         let c_value = CString::new(value.clone())?;
-        if self.handle.as_ref().unwrap().set(&c_key, &c_value).is_ok() {
-            Ok(self)
-        } else {
-            Err(ConfigError::SetError(key.to_owned(), value))
+        let state =
+            unsafe { ffi::duckdb_set_config(*self.handle, c_key.as_ptr(), c_value.as_ptr()) };
+        if state != ffi::DuckDBSuccess {
+            return Err(ConfigError::SetError(key.to_owned(), value));
         }
+        Ok(self)
+    }
+}
+
+impl Deref for Config {
+    type Target = ConfigHandle;
+
+    fn deref(&self) -> &Self::Target {
+        &self.handle
     }
 }
