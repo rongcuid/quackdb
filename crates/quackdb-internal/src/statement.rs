@@ -2,7 +2,7 @@ use std::{ffi::CStr, ops::Deref, sync::Arc};
 
 use thiserror::Error;
 
-use crate::{arrow::ArrowResultHandle, connection::ConnectionHandle, ffi, types::TypeId};
+use crate::{arrow::ArrowResultHandle, connection::ConnectionHandle, ffi};
 
 #[derive(Debug)]
 pub struct PreparedStatementHandle {
@@ -50,12 +50,12 @@ impl PreparedStatementHandle {
     pub fn nparams(&self) -> u64 {
         unsafe { ffi::duckdb_nparams(self.handle) }
     }
-    /// # Safety
-    /// * `param_idx` must be in range
-    pub unsafe fn param_type(&self, param_idx: u64) -> TypeId {
-        let ty = ffi::duckdb_param_type(self.handle, param_idx);
-        TypeId::from_raw(ty).expect("invalid duckdb type")
-    }
+    // /// # Safety
+    // /// * `param_idx` must be in range
+    // pub unsafe fn param_type(&self, param_idx: u64) -> TypeId {
+    //     let ty = ffi::duckdb_param_type(self.handle, param_idx);
+    //     TypeId::from_raw(ty).expect("invalid duckdb type")
+    // }
     pub fn clear_bindings(&self) -> Result<(), BindError> {
         unsafe {
             let res = ffi::duckdb_clear_bindings(self.handle);

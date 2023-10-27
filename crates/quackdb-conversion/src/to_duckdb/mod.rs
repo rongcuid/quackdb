@@ -3,18 +3,17 @@ pub use primitive::*;
 
 mod chrono;
 pub use chrono::*;
-
-use quackdb_internal::types::{LogicalTypeHandle, TypeId};
+use quackdb_internal::type_id::TypeId;
 
 /// Rust primitive types to duckdb types
 pub trait ToDuckDbType {
     const DUCKDB_TYPE_ID: TypeId;
     /// Representation to interface with DuckDb
     type DuckDbRepresentation;
-    /// Create a duckdb logical type structure for this type
-    fn logical_type() -> LogicalTypeHandle {
-        unsafe { LogicalTypeHandle::from_id(Self::DUCKDB_TYPE_ID) }
-    }
+    // /// Create a duckdb logical type structure for this type
+    // fn logical_type() -> LogicalTypeHandle {
+    //     unsafe { LogicalTypeHandle::from_id(Self::DUCKDB_TYPE_ID) }
+    // }
 }
 
 pub trait IntoDuckDb

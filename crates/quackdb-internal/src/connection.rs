@@ -1,15 +1,12 @@
 use std::{ffi::CStr, ops::Deref, sync::Arc};
 
-use crate::{
-    arrow::ArrowResultHandle, database::DatabaseHandle, ffi, statement::PreparedStatementHandle,
-    table_function::TableFunctionHandle,
-};
+use crate::{database::DatabaseHandle, ffi};
 
 #[derive(Debug)]
 pub struct ConnectionHandle {
     handle: ffi::duckdb_connection,
     _parent: Arc<DatabaseHandle>,
-    _table_functions: Vec<Arc<TableFunctionHandle>>,
+    // _table_functions: Vec<Arc<TableFunctionHandle>>,
 }
 
 impl ConnectionHandle {
@@ -19,7 +16,7 @@ impl ConnectionHandle {
         Arc::new(Self {
             handle: raw,
             _parent: parent,
-            _table_functions: vec![],
+            // _table_functions: vec![],
         })
     }
 

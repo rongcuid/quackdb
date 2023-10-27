@@ -8,8 +8,9 @@ pub mod config;
 pub mod connection;
 pub mod database;
 pub mod statement;
-pub mod table_function;
-pub mod types;
+// pub mod table_function;
+// pub mod types;
+pub mod type_id;
 
 pub fn library_version() -> String {
     unsafe {
