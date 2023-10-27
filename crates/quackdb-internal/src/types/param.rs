@@ -1,12 +1,9 @@
 use std::ffi::CStr;
 
 use paste::paste;
-use rust_decimal::Decimal;
-use time::{error::ComponentRange, Date, Duration, PrimitiveDateTime, Time};
+use time::{Date, Duration, PrimitiveDateTime, Time};
 
 use crate::{appender::AppenderHandle, ffi, statement::PreparedStatementHandle};
-
-use super::DuckDbDecimal;
 
 /// Values that can bind to prepared statements
 pub unsafe trait BindParam {
@@ -84,7 +81,6 @@ impl_bind_param_for_value! {i16}
 impl_bind_param_for_value! {i32}
 impl_bind_param_for_value! {i64}
 impl_bind_param_for_value! {i128}
-impl_bind_param_for_value! {DuckDbDecimal, bind_decimal}
 impl_bind_param_for_value! {u8}
 impl_bind_param_for_value! {u16}
 impl_bind_param_for_value! {u32}

@@ -39,16 +39,6 @@ macro_rules! impl_to_duckdb_for_primitive {
     };
 }
 
-macro_rules! impl_to_arrow_for_primitive {
-    ($ty:ty, $arrow_type:ty) => {
-        impl ToArrowType for $ty {
-            type ArrowType = $arrow_type;
-            type ArrowArrayType = PrimitiveArray<$arrow_type>;
-            const ARROW_DATA_TYPE: DataType = <$arrow_type>::DATA_TYPE;
-        }
-    };
-}
-
 impl_to_duckdb_for_primitive! { bool, TypeId::Boolean }
 impl_to_duckdb_for_primitive! { i8, TypeId::TinyInt }
 impl_to_duckdb_for_primitive! { i16, TypeId::SmallInt }
@@ -140,34 +130,3 @@ impl ToDuckDbType for PrimitiveDateTime {
         todo!()
     }
 }
-
-// /// Rust primitive types to arrow types
-// pub trait ToArrowType {
-//     type ArrowType;
-//     type ArrowArrayType: From<ArrayData>;
-//     const ARROW_DATA_TYPE: DataType;
-// }
-
-// macro_rules! impl_to_arrow {
-//     ($ty:ty, $arrow_type:ty, $array_type:ty) => {
-//         impl ToArrowType for $ty {
-//             type ArrowType = $arrow_type;
-//             type ArrowArrayType = $array_type;
-//             const ARROW_DATA_TYPE: DataType = <$arrow_type>::DATA_TYPE;
-//         }
-//     };
-// }
-
-// impl_to_arrow! { bool, BooleanType, BooleanArray }
-// impl_to_arrow_for_primitive! { i8, Int8Type }
-
-// impl_to_arrow_for_primitive! { i16, Int16Type, TypeId::SmallInt }
-// impl_to_arrow_for_primitive! { i32, Int32Type, TypeId::Integer }
-// impl_to_arrow_for_primitive! { i64, Int64Type, TypeId::BigInt }
-// impl_to_arrow_for_primitive! { u8, UInt8Type, TypeId::UTinyInt }
-// impl_to_arrow_for_primitive! { u16, UInt16Type, TypeId::USmallInt }
-// impl_to_arrow_for_primitive! { u32, UInt32Type, TypeId::UInteger }
-// impl_to_arrow_for_primitive! { u64, UInt64Type, TypeId::UBigInt }
-// impl_to_arrow_for_primitive! { f32, Float32Type, TypeId::Float }
-// impl_to_arrow_for_primitive! { f64, Float64Type, TypeId::Double }
-// impl_to_arrow! { str, Utf8Type, StringArray, TypeId::VarChar }
