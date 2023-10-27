@@ -1,6 +1,6 @@
-use std::{ops::Deref, ptr, sync::Arc};
+use std::{ops::Deref, sync::Arc};
 
-use crate::{connection::ConnectionHandle, ffi};
+use crate::ffi;
 
 #[derive(Debug)]
 pub struct DatabaseHandle(ffi::duckdb_database);

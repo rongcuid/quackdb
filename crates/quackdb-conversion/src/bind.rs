@@ -2,7 +2,7 @@ use std::ffi::CStr;
 
 use chrono::prelude::*;
 use paste::paste;
-use quackdb_internal::{ffi, statement::PreparedStatementHandle};
+use quackdb_internal::ffi;
 
 use crate::to_duckdb::IntoDuckDb;
 

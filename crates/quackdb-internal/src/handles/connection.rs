@@ -1,6 +1,8 @@
-use std::{ffi::CStr, ops::Deref, sync::Arc};
+use std::{ops::Deref, sync::Arc};
 
-use crate::{database::DatabaseHandle, ffi};
+use crate::ffi;
+
+use super::DatabaseHandle;
 
 #[derive(Debug)]
 pub struct ConnectionHandle {

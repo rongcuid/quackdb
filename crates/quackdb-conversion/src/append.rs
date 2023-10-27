@@ -3,7 +3,7 @@ use std::ffi::CStr;
 use chrono::prelude::*;
 use paste::paste;
 
-use quackdb_internal::{appender::AppenderHandle, ffi};
+use quackdb_internal::ffi;
 
 use crate::to_duckdb::IntoDuckDb;
 

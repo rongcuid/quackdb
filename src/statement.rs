@@ -1,7 +1,10 @@
 use std::{ops::Deref, sync::Arc};
 
 use quackdb_conversion::BindParam;
-use quackdb_internal::{arrow::ArrowResultHandle, ffi, statement::PreparedStatementHandle};
+use quackdb_internal::{
+    ffi,
+    handles::{ArrowResultHandle, PreparedStatementHandle},
+};
 
 use crate::arrow::ArrowResult;
 

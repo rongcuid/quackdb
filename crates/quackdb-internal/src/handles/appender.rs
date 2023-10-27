@@ -1,8 +1,9 @@
-use paste::paste;
-use std::{ffi::CStr, ops::Deref, sync::Arc};
+use std::{ops::Deref, sync::Arc};
 use thiserror::Error;
 
-use crate::{connection::ConnectionHandle, ffi};
+use crate::ffi;
+
+use super::ConnectionHandle;
 
 pub struct AppenderHandle {
     handle: ffi::duckdb_appender,

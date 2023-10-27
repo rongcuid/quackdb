@@ -6,7 +6,10 @@ use std::{
     sync::Arc,
 };
 
-use quackdb_internal::{connection::ConnectionHandle, database::DatabaseHandle, ffi};
+use quackdb_internal::{
+    ffi,
+    handles::{ConnectionHandle, DatabaseHandle},
+};
 
 use crate::{config::Config, connection::Connection, cutils::option_path_to_cstring};
 

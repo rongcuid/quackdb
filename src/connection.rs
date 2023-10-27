@@ -5,8 +5,8 @@ use std::{
 };
 
 use quackdb_internal::{
-    appender::AppenderHandle, arrow::ArrowResultHandle, connection::ConnectionHandle, ffi,
-    statement::PreparedStatementHandle,
+    ffi,
+    handles::{AppenderHandle, ArrowResultHandle, ConnectionHandle, PreparedStatementHandle},
 };
 
 use crate::{appender::Appender, arrow::ArrowResult, statement::PreparedStatement};

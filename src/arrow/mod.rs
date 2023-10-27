@@ -9,11 +9,9 @@ use arrow::{
 };
 use thiserror::Error;
 
-use quackdb_internal::{arrow::ArrowResultHandle, ffi};
+use quackdb_internal::{ffi, handles::ArrowResultHandle};
 
 use iters::TryBatchMap;
-
-use crate::connection::Connection;
 
 #[derive(Debug)]
 pub struct ArrowResult {

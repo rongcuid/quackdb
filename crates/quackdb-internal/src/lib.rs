@@ -2,14 +2,9 @@ use std::ffi::CStr;
 
 pub mod ffi;
 
-pub mod appender;
-pub mod arrow;
-pub mod config;
-pub mod connection;
-pub mod database;
-pub mod statement;
 // pub mod table_function;
 // pub mod types;
+pub mod handles;
 pub mod type_id;
 
 pub fn library_version() -> String {

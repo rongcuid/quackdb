@@ -1,12 +1,8 @@
-use std::{ffi::CStr, ops::Deref, sync::Arc};
+use std::{ops::Deref, sync::Arc};
 
-use arrow::{
-    array::{RecordBatch, StructArray},
-    error::ArrowError,
-    ffi::{from_ffi, FFI_ArrowArray, FFI_ArrowSchema},
-};
+use crate::ffi;
 
-use crate::{connection::ConnectionHandle, ffi, statement::PreparedStatementHandle};
+use super::{ConnectionHandle, PreparedStatementHandle};
 
 #[derive(Debug)]
 pub struct ArrowResultHandle {

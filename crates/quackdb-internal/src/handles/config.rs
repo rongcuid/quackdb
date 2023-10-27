@@ -1,4 +1,4 @@
-use std::{ffi::CStr, ops::Deref, ptr};
+use std::ops::Deref;
 
 use crate::ffi;
 

@@ -1,8 +1,10 @@
-use std::{ffi::CStr, ops::Deref, sync::Arc};
+use std::{ops::Deref, sync::Arc};
 
 use thiserror::Error;
 
-use crate::{arrow::ArrowResultHandle, connection::ConnectionHandle, ffi};
+use crate::ffi;
+
+use super::ConnectionHandle;
 
 #[derive(Debug)]
 pub struct PreparedStatementHandle {

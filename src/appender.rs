@@ -1,7 +1,7 @@
 use std::{ffi::CStr, ops::Deref};
 
 use quackdb_conversion::AppendParam;
-use quackdb_internal::{appender::AppenderHandle, ffi};
+use quackdb_internal::{ffi, handles::AppenderHandle};
 use thiserror::Error;
 
 pub struct Appender {

@@ -3,7 +3,7 @@ use std::{
     ops::Deref,
 };
 
-use quackdb_internal::{config::ConfigHandle, ffi};
+use quackdb_internal::{ffi, handles::ConfigHandle};
 
 /// duckdb configuration
 #[derive(Debug)]
