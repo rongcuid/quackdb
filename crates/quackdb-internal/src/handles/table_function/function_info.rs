@@ -3,7 +3,7 @@ use std::{
     ops::Deref,
 };
 
-use crate::{ffi, types::LogicalTypeHandle};
+use crate::ffi;
 
 pub struct FunctionInfoHandle {
     handle: ffi::duckdb_function_info,

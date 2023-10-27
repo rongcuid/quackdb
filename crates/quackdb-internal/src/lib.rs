@@ -2,7 +2,6 @@ use std::ffi::CStr;
 
 pub mod ffi;
 
-// pub mod table_function;
 // pub mod types;
 pub mod conversion;
 pub mod handles;

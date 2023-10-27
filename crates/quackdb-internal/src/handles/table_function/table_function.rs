@@ -4,7 +4,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::{ffi, types::LogicalTypeHandle};
+use crate::{ffi, handles::LogicalTypeHandle};
 
 #[derive(Debug)]
 pub struct TableFunctionHandle {

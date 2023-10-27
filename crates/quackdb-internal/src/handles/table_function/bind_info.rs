@@ -3,7 +3,7 @@ use std::{
     ops::Deref,
 };
 
-use crate::{ffi, types::LogicalTypeHandle};
+use crate::{ffi, handles::LogicalTypeHandle};
 
 pub struct BindInfoHandle {
     handle: ffi::duckdb_bind_info,

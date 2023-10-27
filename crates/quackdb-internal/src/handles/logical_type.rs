@@ -1,8 +1,6 @@
 use std::{ffi::CStr, ops::Deref};
 
-use crate::ffi;
-
-use super::TypeId;
+use crate::{ffi, type_id::TypeId};
 
 #[derive(Debug)]
 pub struct LogicalTypeHandle(ffi::duckdb_logical_type);
