@@ -53,7 +53,7 @@ Raw FFI handles can be accessed by dereferencing either high level or wrapper st
   * [x] Rust primitive types to/from DuckDb types
   * [x] Chrono to/from DuckDb
 * [x] Remove intermediate API
-* [ ] Replacement scans
+* [x] Replacement scans
 
 ## Roadmap -- 0.5.0
 * [ ] Compound logical type in Rust

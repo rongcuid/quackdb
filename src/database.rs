@@ -1,5 +1,6 @@
+use cstr::cstr;
 use std::{
-    ffi::{CStr, NulError},
+    ffi::{c_char, c_void, CStr, CString, NulError},
     ops::Deref,
     path::Path,
     ptr,
@@ -8,10 +9,15 @@ use std::{
 
 use quackdb_internal::{
     ffi,
-    handles::{ConnectionHandle, DatabaseHandle},
+    handles::{ConnectionHandle, DatabaseHandle, ReplacementScanInfoHandle},
 };
 
-use crate::{config::Config, connection::Connection, cutils::option_path_to_cstring};
+use crate::{
+    config::Config,
+    connection::Connection,
+    cutils::option_path_to_cstring,
+    replacement_scan::{ReplacementScanError, ReplacementScanInfo},
+};
 
 #[derive(Debug)]
 pub struct Database {
@@ -66,6 +72,51 @@ impl Database {
             return Err(DatabaseError::ConnectError);
         }
         Ok(unsafe { ConnectionHandle::from_raw(handle, self.handle.clone()) }.into())
+    }
+
+    pub fn add_replacement_scan<F, D, E>(&self, replacement: F, extra: D)
+    where
+        E: std::error::Error,
+        F: Fn(&ReplacementScanInfo, String, &D) -> Result<(), E>,
+    {
+        struct ExtraData<F, D> {
+            replacement: F,
+            extra: D,
+        }
+        extern "C" fn f<F, D, E: std::error::Error>(
+            info: ffi::duckdb_replacement_scan_info,
+            table_name: *const c_char,
+            data: *mut c_void,
+        ) where
+            F: Fn(&ReplacementScanInfo, String, &D) -> Result<(), E>,
+        {
+            let data: *const ExtraData<F, D> = data.cast();
+            let info: ReplacementScanInfo =
+                unsafe { ReplacementScanInfoHandle::from_raw(info) }.into();
+            let table_name = unsafe { CStr::from_ptr(table_name) }
+                .to_string_lossy()
+                .into_owned();
+            let res = unsafe { ((*data).replacement)(&info, table_name, &(*data).extra) };
+            if let Err(e) = res {
+                let msg = CString::new(e.to_string());
+                let cstr = msg.as_deref().unwrap_or(cstr!(
+                    "replacement scan callback returns error string with Nul"
+                ));
+                unsafe { ffi::duckdb_replacement_scan_set_error(*info, cstr.as_ptr()) }
+            }
+        }
+        extern "C" fn drop_extra_data<F, D>(ptr: *mut c_void) {
+            unsafe { drop::<Box<ExtraData<F, D>>>(Box::from_raw(ptr.cast())) }
+        }
+        let extra_data = Box::new(ExtraData { replacement, extra });
+        unsafe {
+            ffi::duckdb_add_replacement_scan(
+                **self,
+                Some(f::<F, D, E>),
+                Box::into_raw(extra_data).cast(),
+                Some(drop_extra_data::<F, D>),
+            );
+        }
     }
 }
 

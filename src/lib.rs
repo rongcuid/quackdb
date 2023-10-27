@@ -5,6 +5,7 @@ pub mod arrow;
 pub mod config;
 pub mod connection;
 pub mod database;
+pub mod replacement_scan;
 pub mod statement;
 pub mod table_function;
 pub mod types;
