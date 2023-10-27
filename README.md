@@ -14,31 +14,29 @@ A [DuckDB](https://duckdb.org/) API with ergonomic high-level API without sacrif
 
 The main API is the high level, safe API.
 
-`quackdb-internal` exposes low-level wrapper over types from `libduckdb-sys` with Rust types.
-This API can be accessed by the public `handle` field of high-level structures.
-
-Raw FFI handles can be accessed by dereferencing low level structures and used with `libduckdb-sys` functions.
+`quackdb-internal` contains wrappers over types from `libduckdb-sys` with Rust types.
+These types are only used for object lifetime management.
+Raw FFI handles can be accessed by dereferencing either high level or wrapper structures.
 
 ### API Support
 
-| C API             | High Level | Low Level |
-| ----------------- | ---------- | --------- |
-| Database          | Yes        | Yes       |
-| Connection        | Yes        | Yes       |
-| Config            | Yes        | Yes       |
-| Query             | Arrow      | Yes       |
-| Data Chunks       | No         | No        |
-| Values            | No         | No        |
-| Types             | Partial    | Yes       |
-| Statements        | Yes        | Yes       |
-| Appender          | Yes        | Yes       |
-| Table Functions   | Almost     | Yes       |
-| Replacement Scans | No         | No        |
+| C API             | High Level |
+| ----------------- | ---------- |
+| Database          | Yes        |
+| Connection        | Yes        |
+| Config            | Yes        |
+| Query             | Arrow      |
+| Data Chunks       | No         |
+| Values            | No         |
+| Types             | Partial    |
+| Statements        | Yes        |
+| Appender          | Yes        |
+| Table Functions   | Almost     |
+| Replacement Scans | No         |
 
-* API which doesn't have low level support can still be used via `quackdb-internal::ffi` module
 * Query results require working with [arrow](https://docs.rs/arrow/latest/arrow/) `RecordBatch` directly
-* Table functions are supported, but it has to access data chunks directly via FFI
-* Currently, DuckDB types, Arrow types, and Rust types are not reconciled
+* Table functions are supported, but it has to work with data chunks directly via FFI
+* Currently, DuckDB types, Arrow types, and Rust types are not fully reconciled
 
 ### API conventions
 
@@ -54,21 +52,20 @@ Raw FFI handles can be accessed by dereferencing low level structures and used w
 * [x] DuckDb types conversion
   * [x] Rust primitive types to/from DuckDb types
   * [x] Chrono to/from DuckDb
-* [ ] Try to remove intermediate API?
-* [ ] Remove conversion crate
+* [x] Remove intermediate API
+* [ ] Replacement scans
 
 ## Roadmap -- 0.5.0
-* [ ] Serde support
-* [ ] Replacement scan
+* [ ] Compound logical type in Rust
 
 ## Roadmap -- Future
 
+* [ ] Full support of table function
+* [ ] Serde support
 * [ ] Clean up error types
-* [ ] Clean up `&self` and `&mut self` receivers
+* [ ] Clean up receivers
 * [ ] Make naming consistent
-* [ ] Documentation
+* [ ] Comprehensive documentation
 * [ ] Comprehensive tests
-* [ ] Replacement scans
 * [ ] Streaming arrow (optional)
-* [ ] Polars support (optional)
 
