@@ -1,10 +1,10 @@
 use std::ffi::CStr;
 
+use super::IntoDuckDb;
+use crate::ffi;
+
 use chrono::prelude::*;
 use paste::paste;
-use quackdb_internal::ffi;
-
-use crate::to_duckdb::IntoDuckDb;
 
 /// Values that can bind to prepared statements
 pub unsafe trait BindParam {

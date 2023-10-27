@@ -1,6 +1,6 @@
 use std::ffi::{c_char, CStr};
 
-use quackdb_internal::{ffi, type_id::TypeId};
+use crate::{ffi, type_id::TypeId};
 
 use super::{FromDuckDb, IntoDuckDb, ToDuckDbType};
 

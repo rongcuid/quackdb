@@ -24,3 +24,4 @@ paste = "1"
 libduckdb-sys = { workspace = true }
 
 arrow = { workspace = true, features = ["ffi"] }
+chrono = { workspace = true }

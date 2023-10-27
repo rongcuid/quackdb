@@ -2,8 +2,8 @@ mod primitive;
 pub use primitive::*;
 
 mod chrono;
+use crate::type_id::TypeId;
 pub use chrono::*;
-use quackdb_internal::type_id::TypeId;
 
 /// Rust primitive types to duckdb types
 pub trait ToDuckDbType {
