@@ -77,9 +77,23 @@ impl Connection {
     pub fn appender(&self, schema: Option<&str>, table: &str) -> Result<Appender, ConnectionError> {
         let schema = schema.map(CString::new).transpose()?;
         let table = CString::new(table)?;
-        AppenderHandle::create(self.handle.clone(), schema.as_deref(), &table)
-            .map_err(ConnectionError::AppenderError)
-            .map(Appender::from)
+        unsafe {
+            let mut out_appender: ffi::duckdb_appender = std::mem::zeroed();
+            let r = ffi::duckdb_appender_create(
+                **self,
+                schema.map_or(std::ptr::null(), |s| s.as_ptr()),
+                table.as_ptr(),
+                &mut out_appender,
+            );
+            if r != ffi::DuckDBSuccess {
+                let err = CStr::from_ptr(ffi::duckdb_appender_error(out_appender));
+                let err = err.to_string_lossy().into_owned();
+                ffi::duckdb_appender_destroy(&mut out_appender);
+                Err(ConnectionError::AppenderError(err))
+            } else {
+                Ok(AppenderHandle::from_raw(out_appender, self.handle.clone()).into())
+            }
+        }
     }
     // pub fn register_table_function(
     //     &mut self,
