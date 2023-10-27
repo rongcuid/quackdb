@@ -10,12 +10,7 @@ impl LogicalTypeHandle {
         Self(handle)
     }
     pub unsafe fn from_id(type_: TypeId) -> Self {
-        match type_ {
-            TypeId::Decimal => {
-                panic!("duckdb_create_logical_type() should not be used with DUCKDB_TYPE_DECIMAL")
-            }
-            id => Self::from_raw(ffi::duckdb_create_logical_type(id.to_raw())),
-        }
+        Self::from_raw(ffi::duckdb_create_logical_type(type_.to_raw()))
     }
     pub fn type_id(&self) -> Option<TypeId> {
         unsafe { TypeId::from_raw(ffi::duckdb_get_type_id(self.0)) }

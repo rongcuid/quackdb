@@ -8,7 +8,7 @@ use std::{
 
 use quackdb_internal::{
     ffi,
-    table_function::{BindInfoHandle, FunctionInfoHandle, InitInfoHandle, TableFunctionHandle},
+    handles::{BindInfoHandle, FunctionInfoHandle, InitInfoHandle, TableFunctionHandle},
 };
 use thiserror::Error;
 

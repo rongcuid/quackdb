@@ -1,4 +1,4 @@
-use quackdb_internal::table_function::{BindInfoHandle, FunctionInfoHandle, InitInfoHandle};
+use quackdb_internal::handles::{BindInfoHandle, FunctionInfoHandle, InitInfoHandle};
 
 pub struct BindInfo {
     pub handle: BindInfoHandle,

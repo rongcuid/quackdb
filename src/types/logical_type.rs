@@ -1,27 +1,32 @@
-use quackdb_internal::types::{LogicalTypeHandle, TypeId};
+use std::ops::Deref;
 
-use super::LogicalKind;
+use quackdb_internal::{ffi, handles::LogicalTypeHandle, type_id::TypeId};
 
 #[derive(Debug)]
 pub struct LogicalType {
-    pub handle: LogicalTypeHandle,
-    pub kind: LogicalKind,
+    handle: LogicalTypeHandle,
 }
 
-impl TryFrom<LogicalTypeHandle> for LogicalType {
-    type Error = ();
-    fn try_from(value: LogicalTypeHandle) -> Result<Self, Self::Error> {
-        Ok(LogicalType {
-            kind: LogicalKind::try_from(&value)?,
-            handle: value,
-        })
+impl From<LogicalTypeHandle> for LogicalType {
+    fn from(value: LogicalTypeHandle) -> Self {
+        LogicalType { handle: value }
     }
 }
 
-impl TryFrom<TypeId> for LogicalType {
-    type Error = ();
-    fn try_from(value: TypeId) -> Result<Self, Self::Error> {
+impl From<TypeId> for LogicalType {
+    fn from(value: TypeId) -> Self {
+        if matches!(value, TypeId::Decimal) {
+            panic!("duckdb_create_logical_type() should not be used with DUCKDB_TYPE_DECIMAL")
+        }
         let handle = unsafe { LogicalTypeHandle::from_id(value) };
-        Self::try_from(handle)
+        Self::from(handle)
+    }
+}
+
+impl Deref for LogicalType {
+    type Target = ffi::duckdb_logical_type;
+
+    fn deref(&self) -> &Self::Target {
+        &self.handle
     }
 }
