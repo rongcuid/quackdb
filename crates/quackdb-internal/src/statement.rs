@@ -1,9 +1,10 @@
 use std::{ffi::CStr, ops::Deref, sync::Arc};
 
-use time::{Date, Duration, PrimitiveDateTime, Time};
-
 use crate::{
-    arrow::ArrowResultHandle, connection::ConnectionHandle, conversion::*, ffi, types::TypeId,
+    arrow::ArrowResultHandle,
+    connection::ConnectionHandle,
+    ffi,
+    types::{i128_to_hugeint, TypeId},
 };
 
 #[derive(Debug)]
@@ -70,32 +71,32 @@ impl PreparedStatementHandle {
         }
         Ok(())
     }
-    pub unsafe fn bind_i8(&self, param_idx: u64, val: i8) -> Result<(), ()> {
+    pub unsafe fn bind_int8(&self, param_idx: u64, val: i8) -> Result<(), ()> {
         if ffi::duckdb_bind_int8(self.handle, param_idx, val) != ffi::DuckDBSuccess {
             return Err(());
         }
         Ok(())
     }
-    pub unsafe fn bind_i16(&self, param_idx: u64, val: i16) -> Result<(), ()> {
+    pub unsafe fn bind_int16(&self, param_idx: u64, val: i16) -> Result<(), ()> {
         if ffi::duckdb_bind_int16(self.handle, param_idx, val) != ffi::DuckDBSuccess {
             return Err(());
         }
         Ok(())
     }
-    pub unsafe fn bind_i32(&self, param_idx: u64, val: i32) -> Result<(), ()> {
+    pub unsafe fn bind_int32(&self, param_idx: u64, val: i32) -> Result<(), ()> {
         if ffi::duckdb_bind_int32(self.handle, param_idx, val) != ffi::DuckDBSuccess {
             return Err(());
         }
         Ok(())
     }
-    pub unsafe fn bind_i64(&self, param_idx: u64, val: i64) -> Result<(), ()> {
+    pub unsafe fn bind_int64(&self, param_idx: u64, val: i64) -> Result<(), ()> {
         if ffi::duckdb_bind_int64(self.handle, param_idx, val) != ffi::DuckDBSuccess {
             return Err(());
         }
         Ok(())
     }
-    pub unsafe fn bind_i128(&self, param_idx: u64, val: i128) -> Result<(), ()> {
-        let hugeint = val.into_duckdb();
+    pub unsafe fn bind_hugeint(&self, param_idx: u64, val: i128) -> Result<(), ()> {
+        let hugeint = i128_to_hugeint(val);
         if ffi::duckdb_bind_hugeint(self.handle, param_idx, hugeint) != ffi::DuckDBSuccess {
             return Err(());
         }
@@ -111,78 +112,80 @@ impl PreparedStatementHandle {
         let decimal = ffi::duckdb_decimal {
             width,
             scale,
-            value: value.into_duckdb(),
+            value: i128_to_hugeint(value),
         };
         if ffi::duckdb_bind_decimal(self.handle, param_idx, decimal) != ffi::DuckDBSuccess {
             return Err(());
         }
         Ok(())
     }
-    pub unsafe fn bind_u8(&self, param_idx: u64, val: u8) -> Result<(), ()> {
+    pub unsafe fn bind_uint8(&self, param_idx: u64, val: u8) -> Result<(), ()> {
         if ffi::duckdb_bind_uint8(self.handle, param_idx, val) != ffi::DuckDBSuccess {
             return Err(());
         }
         Ok(())
     }
-    pub unsafe fn bind_u16(&self, param_idx: u64, val: u16) -> Result<(), ()> {
+    pub unsafe fn bind_uint16(&self, param_idx: u64, val: u16) -> Result<(), ()> {
         if ffi::duckdb_bind_uint16(self.handle, param_idx, val) != ffi::DuckDBSuccess {
             return Err(());
         }
         Ok(())
     }
-    pub unsafe fn bind_u32(&self, param_idx: u64, val: u32) -> Result<(), ()> {
+    pub unsafe fn bind_uint32(&self, param_idx: u64, val: u32) -> Result<(), ()> {
         if ffi::duckdb_bind_uint32(self.handle, param_idx, val) != ffi::DuckDBSuccess {
             return Err(());
         }
         Ok(())
     }
-    pub unsafe fn bind_u64(&self, param_idx: u64, val: u64) -> Result<(), ()> {
+    pub unsafe fn bind_uint64(&self, param_idx: u64, val: u64) -> Result<(), ()> {
         if ffi::duckdb_bind_uint64(self.handle, param_idx, val) != ffi::DuckDBSuccess {
             return Err(());
         }
         Ok(())
     }
-    pub unsafe fn bind_f32(&self, param_idx: u64, val: f32) -> Result<(), ()> {
+    pub unsafe fn bind_float(&self, param_idx: u64, val: f32) -> Result<(), ()> {
         if ffi::duckdb_bind_float(self.handle, param_idx, val) != ffi::DuckDBSuccess {
             return Err(());
         }
         Ok(())
     }
-    pub unsafe fn bind_f64(&self, param_idx: u64, val: f64) -> Result<(), ()> {
+    pub unsafe fn bind_double(&self, param_idx: u64, val: f64) -> Result<(), ()> {
         if ffi::duckdb_bind_double(self.handle, param_idx, val) != ffi::DuckDBSuccess {
             return Err(());
         }
         Ok(())
     }
-    pub unsafe fn bind_date(&self, param_idx: u64, val: Date) -> Result<(), ()> {
-        let date = val.into_duckdb();
-        if ffi::duckdb_bind_date(self.handle, param_idx, ffi::duckdb_to_date(date))
-            != ffi::DuckDBSuccess
-        {
+    pub unsafe fn bind_date(&self, param_idx: u64, val: ffi::duckdb_date) -> Result<(), ()> {
+        if ffi::duckdb_bind_date(self.handle, param_idx, val) != ffi::DuckDBSuccess {
             return Err(());
         }
         Ok(())
     }
-    pub unsafe fn bind_time(&self, param_idx: u64, val: Time) -> Result<(), ()> {
-        let time = val.into_duckdb();
-        if ffi::duckdb_bind_time(self.handle, param_idx, ffi::duckdb_to_time(time))
-            != ffi::DuckDBSuccess
-        {
+    pub unsafe fn bind_time(&self, param_idx: u64, val: ffi::duckdb_time) -> Result<(), ()> {
+        if ffi::duckdb_bind_time(self.handle, param_idx, val) != ffi::DuckDBSuccess {
             return Err(());
         }
         Ok(())
     }
-    pub unsafe fn bind_timestamp(&self, param_idx: u64, val: PrimitiveDateTime) -> Result<(), ()> {
-        let ts = val.into_duckdb();
-        if ffi::duckdb_bind_timestamp(self.handle, param_idx, ffi::duckdb_to_timestamp(ts))
-            != ffi::DuckDBSuccess
-        {
+    pub unsafe fn bind_timestamp(
+        &self,
+        param_idx: u64,
+        val: ffi::duckdb_timestamp,
+    ) -> Result<(), ()> {
+        if ffi::duckdb_bind_timestamp(self.handle, param_idx, val) != ffi::DuckDBSuccess {
             return Err(());
         }
         Ok(())
     }
-    pub unsafe fn bind_interval(&self, param_idx: u64, val: Duration) -> Result<(), ()> {
-        todo!()
+    pub unsafe fn bind_interval(
+        &self,
+        param_idx: u64,
+        val: ffi::duckdb_interval,
+    ) -> Result<(), ()> {
+        if ffi::duckdb_bind_interval(self.handle, param_idx, val) != ffi::DuckDBSuccess {
+            return Err(());
+        }
+        Ok(())
     }
     pub unsafe fn bind_varchar(&self, param_idx: u64, val: &CStr) -> Result<(), ()> {
         if ffi::duckdb_bind_varchar(self.handle, param_idx, val.as_ptr()) != ffi::DuckDBSuccess {
@@ -190,7 +193,7 @@ impl PreparedStatementHandle {
         }
         Ok(())
     }
-    pub unsafe fn bind_varchar_str(&self, param_idx: u64, val: &str) -> Result<(), ()> {
+    pub unsafe fn bind_varchar_length(&self, param_idx: u64, val: &str) -> Result<(), ()> {
         let b = val.as_bytes();
         if ffi::duckdb_bind_varchar_length(self.handle, param_idx, b.as_ptr() as _, b.len() as u64)
             != ffi::DuckDBSuccess

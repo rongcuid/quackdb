@@ -1,8 +1,7 @@
 use paste::paste;
 use std::{ffi::CStr, ops::Deref, sync::Arc};
-use time::{Date, Duration, PrimitiveDateTime, Time};
 
-use crate::{connection::ConnectionHandle, conversion::*, ffi};
+use crate::{connection::ConnectionHandle, ffi, types::i128_to_hugeint};
 
 pub struct AppenderHandle {
     handle: ffi::duckdb_appender,
@@ -84,7 +83,7 @@ impl AppenderHandle {
     fn_append! {i32, int32}
     fn_append! {i64, int64}
     pub fn append_hugeint(&self, value: i128) -> Result<(), String> {
-        let h = value.into_duckdb();
+        let h = i128_to_hugeint(value);
         self.do_or_error(unsafe { ffi::duckdb_append_hugeint(**self, h) })
     }
     fn_append! {u8, uint8}
@@ -93,22 +92,17 @@ impl AppenderHandle {
     fn_append! {u64, uint64}
     fn_append! {f32, float}
     fn_append! {f64, double}
-    pub fn append_date(&self, value: Date) -> Result<(), String> {
-        let d = value.into_duckdb();
-        self.do_or_error(unsafe { ffi::duckdb_append_date(**self, ffi::duckdb_to_date(d)) })
+    pub fn append_date(&self, value: ffi::duckdb_date) -> Result<(), String> {
+        self.do_or_error(unsafe { ffi::duckdb_append_date(**self, value) })
     }
-    pub fn append_time(&self, value: Time) -> Result<(), String> {
-        let t = value.into_duckdb();
-        self.do_or_error(unsafe { ffi::duckdb_append_time(**self, ffi::duckdb_to_time(t)) })
+    pub fn append_time(&self, value: ffi::duckdb_time) -> Result<(), String> {
+        self.do_or_error(unsafe { ffi::duckdb_append_time(**self, value) })
     }
-    pub fn append_timestamp(&self, value: PrimitiveDateTime) -> Result<(), String> {
-        let dt = value.into_duckdb();
-        self.do_or_error(unsafe {
-            ffi::duckdb_append_timestamp(**self, ffi::duckdb_to_timestamp(dt))
-        })
+    pub fn append_timestamp(&self, value: ffi::duckdb_timestamp) -> Result<(), String> {
+        self.do_or_error(unsafe { ffi::duckdb_append_timestamp(**self, value) })
     }
-    pub fn append_interval(&self, value: Duration) -> Result<(), String> {
-        todo!()
+    pub fn append_interval(&self, value: ffi::duckdb_interval) -> Result<(), String> {
+        self.do_or_error(unsafe { ffi::duckdb_append_interval(**self, value) })
     }
     pub fn append_varchar(&self, value: &CStr) -> Result<(), String> {
         self.do_or_error(unsafe { ffi::duckdb_append_varchar(**self, value.as_ptr()) })

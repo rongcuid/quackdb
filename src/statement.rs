@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use quackdb_internal::{statement::PreparedStatementHandle, types::BindParam};
+use quackdb_conversion::BindParam;
+use quackdb_internal::statement::PreparedStatementHandle;
 
 use crate::arrow::ArrowResult;
 

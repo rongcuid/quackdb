@@ -1,9 +1,8 @@
-use std::ffi::CStr;
+use std::{ffi::CStr, time::Duration};
 
 use paste::paste;
-use time::{Date, Duration, PrimitiveDateTime, Time};
-
-use crate::{appender::AppenderHandle, ffi, statement::PreparedStatementHandle};
+use quackdb_internal::{appender::AppenderHandle, statement::PreparedStatementHandle};
+use time::{Date, PrimitiveDateTime, Time};
 
 /// Values that can bind to prepared statements
 pub unsafe trait BindParam {
@@ -52,17 +51,17 @@ where
 }
 
 macro_rules! impl_bind_param_for_value {
-    ($ty:ty) => {
+    ($ty:ty, $duck_ty:ty) => {
         paste! {
-            impl_bind_param_for_value! {$ty, [<bind_ $ty>]}
+            impl_bind_param_for_value! {$ty, $duck_ty, [<bind_ $duck_ty>]}
         }
     };
-    ($ty:ty, $method:ident) => {
+    ($ty:ty, $duck_ty:ty, $method:ident) => {
         paste! {
-            impl_bind_param_for_value! {$ty, $method, stringify!([<duckdb_ $method>]())}
+            impl_bind_param_for_value! {$ty, $duck_ty, $method, stringify!([<duckdb_ $method>]())}
         }
     };
-    ($ty:ty, $method:ident, $err_msg:expr) => {
+    ($ty:ty, $duck_ty:ty, $method:ident, $err_msg:expr) => {
         unsafe impl BindParam for $ty {
             unsafe fn bind_param_unchecked(
                 self,
@@ -75,25 +74,36 @@ macro_rules! impl_bind_param_for_value {
     };
 }
 
-impl_bind_param_for_value! {bool}
-impl_bind_param_for_value! {i8}
-impl_bind_param_for_value! {i16}
-impl_bind_param_for_value! {i32}
-impl_bind_param_for_value! {i64}
-impl_bind_param_for_value! {i128}
-impl_bind_param_for_value! {u8}
-impl_bind_param_for_value! {u16}
-impl_bind_param_for_value! {u32}
-impl_bind_param_for_value! {u64}
-impl_bind_param_for_value! {f32}
-impl_bind_param_for_value! {f64}
-impl_bind_param_for_value! {&CStr, bind_varchar}
-impl_bind_param_for_value! {&str, bind_varchar_str}
-impl_bind_param_for_value! {Date, bind_date}
-impl_bind_param_for_value! {Time, bind_time}
-impl_bind_param_for_value! {PrimitiveDateTime, bind_timestamp}
-impl_bind_param_for_value! {Duration, bind_interval}
-impl_bind_param_for_value! {&[u8], bind_blob}
+impl_bind_param_for_value! {bool, bool}
+impl_bind_param_for_value! {i8, int8}
+impl_bind_param_for_value! {i16, int16}
+impl_bind_param_for_value! {i32, int32}
+impl_bind_param_for_value! {i64, int64}
+impl_bind_param_for_value! {i128, hugeint}
+impl_bind_param_for_value! {u8, uint8}
+impl_bind_param_for_value! {u16, uint16}
+impl_bind_param_for_value! {u32, uint32}
+impl_bind_param_for_value! {u64, uint64}
+impl_bind_param_for_value! {f32, float}
+impl_bind_param_for_value! {f64, double}
+impl_bind_param_for_value! {&CStr, varchar}
+impl_bind_param_for_value! {&str, varchar_length}
+// impl_bind_param_for_value! {Date, date}
+// impl_bind_param_for_value! {Time, time}
+// impl_bind_param_for_value! {PrimitiveDateTime, timestamp}
+// impl_bind_param_for_value! {Duration, interval}
+impl_bind_param_for_value! {&[u8], blob}
+
+unsafe impl BindParam for String {
+    unsafe fn bind_param_unchecked(
+        self,
+        stmt: &PreparedStatementHandle,
+        param_idx: u64,
+    ) -> Result<(), &'static str> {
+        stmt.bind_varchar_length(param_idx, &self)
+            .map_err(|_| "duckdb_bind_varchar_length()")
+    }
+}
 
 macro_rules! impl_append_param_for_value {
     ($ty:ty, $duck_ty:ty) => {
@@ -127,19 +137,8 @@ impl_append_param_for_value! {f32, float}
 impl_append_param_for_value! {f64, double}
 impl_append_param_for_value! {&CStr, varchar}
 impl_append_param_for_value! {&str, varchar_length}
-impl_append_param_for_value! {Date, date}
-impl_append_param_for_value! {Time, time}
-impl_append_param_for_value! {PrimitiveDateTime, timestamp}
-impl_append_param_for_value! {Duration, interval}
+// impl_append_param_for_value! {Date, date}
+// impl_append_param_for_value! {Time, time}
+// impl_append_param_for_value! {PrimitiveDateTime, timestamp}
+// impl_append_param_for_value! {Duration, interval}
 impl_append_param_for_value! {&[u8], blob}
-
-unsafe impl BindParam for String {
-    unsafe fn bind_param_unchecked(
-        self,
-        stmt: &PreparedStatementHandle,
-        param_idx: u64,
-    ) -> Result<(), &'static str> {
-        stmt.bind_varchar_str(param_idx, &self)
-            .map_err(|_| "duckdb_bind_varchar_str()")
-    }
-}

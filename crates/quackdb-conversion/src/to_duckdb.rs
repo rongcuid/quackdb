@@ -1,10 +1,8 @@
-use libduckdb_sys::duckdb_hugeint;
-use time::{Date, PrimitiveDateTime, Time};
-
-use crate::{
+use quackdb_internal::{
     ffi,
     types::{LogicalTypeHandle, TypeId},
 };
+use time::{Date, PrimitiveDateTime, Time};
 
 /// Rust primitive types to duckdb types
 pub trait ToDuckDbType {
@@ -53,7 +51,7 @@ impl_to_duckdb_for_primitive! { u64, TypeId::UBigInt }
 impl ToDuckDbType for i128 {
     const DUCKDB_TYPE_ID: TypeId = TypeId::HugeInt;
 
-    type DuckDbRepresentation = duckdb_hugeint;
+    type DuckDbRepresentation = ffi::duckdb_hugeint;
 
     fn into_duckdb(self) -> Self::DuckDbRepresentation {
         ffi::duckdb_hugeint {

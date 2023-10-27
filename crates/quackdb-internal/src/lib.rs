@@ -6,7 +6,6 @@ pub mod appender;
 pub mod arrow;
 pub mod config;
 pub mod connection;
-pub mod conversion;
 pub mod database;
 pub mod statement;
 pub mod table_function;

@@ -1,4 +1,5 @@
-use quackdb_internal::{appender::AppenderHandle, types::AppendParam};
+use quackdb_conversion::AppendParam;
+use quackdb_internal::appender::AppenderHandle;
 use thiserror::Error;
 
 pub struct Appender {
