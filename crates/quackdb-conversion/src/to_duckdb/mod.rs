@@ -7,10 +7,7 @@ pub use time::*;
 mod chrono;
 pub use chrono::*;
 
-use quackdb_internal::{
-    ffi,
-    types::{LogicalTypeHandle, TypeId},
-};
+use quackdb_internal::types::{LogicalTypeHandle, TypeId};
 
 /// Rust primitive types to duckdb types
 pub trait ToDuckDbType {

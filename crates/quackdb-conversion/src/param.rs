@@ -1,7 +1,10 @@
 use std::ffi::CStr;
 
+use chrono::prelude::*;
 use paste::paste;
 use quackdb_internal::{appender::AppenderHandle, statement::PreparedStatementHandle};
+
+use crate::to_duckdb::IntoDuckDb;
 
 /// Values that can bind to prepared statements
 pub unsafe trait BindParam {
@@ -49,15 +52,15 @@ where
     }
 }
 
-macro_rules! impl_bind_param_for_value {
+macro_rules! impl_bind_param_for_primitive {
     ($ty:ty, $duck_ty:ty) => {
         paste! {
-            impl_bind_param_for_value! {$ty, $duck_ty, [<bind_ $duck_ty>]}
+            impl_bind_param_for_primitive! {$ty, $duck_ty, [<bind_ $duck_ty>]}
         }
     };
     ($ty:ty, $duck_ty:ty, $method:ident) => {
         paste! {
-            impl_bind_param_for_value! {$ty, $duck_ty, $method, stringify!([<duckdb_ $method>]())}
+            impl_bind_param_for_primitive! {$ty, $duck_ty, $method, stringify!([<duckdb_ $method>]())}
         }
     };
     ($ty:ty, $duck_ty:ty, $method:ident, $err_msg:expr) => {
@@ -73,25 +76,50 @@ macro_rules! impl_bind_param_for_value {
     };
 }
 
-impl_bind_param_for_value! {bool, bool}
-impl_bind_param_for_value! {i8, int8}
-impl_bind_param_for_value! {i16, int16}
-impl_bind_param_for_value! {i32, int32}
-impl_bind_param_for_value! {i64, int64}
-impl_bind_param_for_value! {i128, hugeint}
-impl_bind_param_for_value! {u8, uint8}
-impl_bind_param_for_value! {u16, uint16}
-impl_bind_param_for_value! {u32, uint32}
-impl_bind_param_for_value! {u64, uint64}
-impl_bind_param_for_value! {f32, float}
-impl_bind_param_for_value! {f64, double}
-impl_bind_param_for_value! {&CStr, varchar}
-impl_bind_param_for_value! {&str, varchar_length}
-// impl_bind_param_for_value! {Date, date}
-// impl_bind_param_for_value! {Time, time}
-// impl_bind_param_for_value! {PrimitiveDateTime, timestamp}
-// impl_bind_param_for_value! {Duration, interval}
-impl_bind_param_for_value! {&[u8], blob}
+macro_rules! impl_bind_param {
+    ($ty:ty, $duck_ty:ty) => {
+        paste! {
+            impl_bind_param! {$ty, $duck_ty, [<bind_ $duck_ty>]}
+        }
+    };
+    ($ty:ty, $duck_ty:ty, $method:ident) => {
+        paste! {
+            impl_bind_param! {$ty, $duck_ty, $method, stringify!([<duckdb_ $method>]())}
+        }
+    };
+    ($ty:ty, $duck_ty:ty, $method:ident, $err_msg:expr) => {
+        unsafe impl BindParam for $ty {
+            unsafe fn bind_param_unchecked(
+                self,
+                stmt: &PreparedStatementHandle,
+                param_idx: u64,
+            ) -> Result<(), &'static str> {
+                stmt.$method(param_idx, self.into_duckdb())
+                    .map_err(|_| $err_msg)
+            }
+        }
+    };
+}
+
+impl_bind_param_for_primitive! {bool, bool}
+impl_bind_param_for_primitive! {i8, int8}
+impl_bind_param_for_primitive! {i16, int16}
+impl_bind_param_for_primitive! {i32, int32}
+impl_bind_param_for_primitive! {i64, int64}
+impl_bind_param_for_primitive! {i128, hugeint}
+impl_bind_param_for_primitive! {u8, uint8}
+impl_bind_param_for_primitive! {u16, uint16}
+impl_bind_param_for_primitive! {u32, uint32}
+impl_bind_param_for_primitive! {u64, uint64}
+impl_bind_param_for_primitive! {f32, float}
+impl_bind_param_for_primitive! {f64, double}
+impl_bind_param_for_primitive! {&CStr, varchar}
+impl_bind_param_for_primitive! {&str, varchar_length}
+impl_bind_param! {NaiveDate, date}
+impl_bind_param! {NaiveTime, time}
+impl_bind_param! {NaiveDateTime, timestamp}
+
+impl_bind_param_for_primitive! {&[u8], blob}
 
 unsafe impl BindParam for String {
     unsafe fn bind_param_unchecked(

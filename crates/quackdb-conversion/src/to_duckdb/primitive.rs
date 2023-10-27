@@ -1,3 +1,5 @@
+use std::ffi::{c_char, CStr};
+
 use quackdb_internal::{
     ffi,
     types::{i128_to_hugeint, TypeId},
@@ -33,13 +35,14 @@ impl_to_duckdb_for_primitive! { u8, TypeId::UTinyInt }
 impl_to_duckdb_for_primitive! { u16, TypeId::USmallInt }
 impl_to_duckdb_for_primitive! { u32, TypeId::UInteger }
 impl_to_duckdb_for_primitive! { u64, TypeId::UBigInt }
+impl_to_duckdb_for_primitive! { f32, TypeId::Float }
+impl_to_duckdb_for_primitive! { f64, TypeId::Double }
 
 impl ToDuckDbType for i128 {
     const DUCKDB_TYPE_ID: TypeId = TypeId::HugeInt;
 
     type DuckDbRepresentation = ffi::duckdb_hugeint;
 }
-
 impl IntoDuckDb for i128 {
     fn into_duckdb(self) -> Self::DuckDbRepresentation {
         i128_to_hugeint(self)
@@ -48,5 +51,21 @@ impl IntoDuckDb for i128 {
 impl FromDuckDb for i128 {
     fn from_duckdb(value: Self::DuckDbRepresentation) -> Self {
         (value.upper as i128) << 64 & value.lower as i128
+    }
+}
+
+impl ToDuckDbType for &CStr {
+    const DUCKDB_TYPE_ID: TypeId = TypeId::VarChar;
+
+    type DuckDbRepresentation = *const c_char;
+}
+impl IntoDuckDb for &CStr {
+    fn into_duckdb(self) -> Self::DuckDbRepresentation {
+        self.as_ptr()
+    }
+}
+impl FromDuckDb for &CStr {
+    fn from_duckdb(value: Self::DuckDbRepresentation) -> Self {
+        unsafe { CStr::from_ptr(value) }
     }
 }
