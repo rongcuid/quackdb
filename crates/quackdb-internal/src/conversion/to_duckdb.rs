@@ -1,9 +1,10 @@
 use libduckdb_sys::duckdb_hugeint;
 use time::{Date, PrimitiveDateTime, Time};
 
-use crate::ffi;
-
-use super::{LogicalTypeHandle, TypeId};
+use crate::{
+    ffi,
+    types::{LogicalTypeHandle, TypeId},
+};
 
 /// Rust primitive types to duckdb types
 pub trait ToDuckDbType {

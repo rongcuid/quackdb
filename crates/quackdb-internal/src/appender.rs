@@ -2,7 +2,7 @@ use paste::paste;
 use std::{ffi::CStr, ops::Deref, sync::Arc};
 use time::{Date, Duration, PrimitiveDateTime, Time};
 
-use crate::{connection::ConnectionHandle, ffi, types::*};
+use crate::{connection::ConnectionHandle, conversion::*, ffi};
 
 pub struct AppenderHandle {
     handle: ffi::duckdb_appender,

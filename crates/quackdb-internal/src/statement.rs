@@ -1,9 +1,10 @@
 use std::{ffi::CStr, ops::Deref, sync::Arc};
 
-use rust_decimal::Decimal;
 use time::{Date, Duration, PrimitiveDateTime, Time};
 
-use crate::{arrow::ArrowResultHandle, connection::ConnectionHandle, ffi, types::*};
+use crate::{
+    arrow::ArrowResultHandle, connection::ConnectionHandle, conversion::*, ffi, types::TypeId,
+};
 
 #[derive(Debug)]
 pub struct PreparedStatementHandle {
@@ -100,8 +101,22 @@ impl PreparedStatementHandle {
         }
         Ok(())
     }
-    pub unsafe fn bind_decimal(&self, param_idx: u64, val: Decimal) -> Result<(), ()> {
-        unimplemented!()
+    pub unsafe fn bind_decimal(
+        &self,
+        param_idx: u64,
+        width: u8,
+        scale: u8,
+        value: i128,
+    ) -> Result<(), ()> {
+        let decimal = ffi::duckdb_decimal {
+            width,
+            scale,
+            value: value.into_duckdb(),
+        };
+        if ffi::duckdb_bind_decimal(self.handle, param_idx, decimal) != ffi::DuckDBSuccess {
+            return Err(());
+        }
+        Ok(())
     }
     pub unsafe fn bind_u8(&self, param_idx: u64, val: u8) -> Result<(), ()> {
         if ffi::duckdb_bind_uint8(self.handle, param_idx, val) != ffi::DuckDBSuccess {
