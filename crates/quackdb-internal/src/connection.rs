@@ -19,13 +19,6 @@ impl ConnectionHandle {
             // _table_functions: vec![],
         })
     }
-
-    /// # Safety
-    /// * Make sure any child objects are closed
-    /// * Do not use this object afterwards
-    pub unsafe fn disconnect(&mut self) {
-        ffi::duckdb_disconnect(&mut self.handle);
-    }
 }
 
 impl Deref for ConnectionHandle {
@@ -38,8 +31,6 @@ impl Deref for ConnectionHandle {
 
 impl Drop for ConnectionHandle {
     fn drop(&mut self) {
-        unsafe {
-            self.disconnect();
-        }
+        unsafe { ffi::duckdb_disconnect(&mut self.handle) }
     }
 }
