@@ -88,7 +88,7 @@ impl_bind_param_for_primitive! {i8, int8}
 impl_bind_param_for_primitive! {i16, int16}
 impl_bind_param_for_primitive! {i32, int32}
 impl_bind_param_for_primitive! {i64, int64}
-impl_bind_param_for_primitive! {i128, hugeint}
+impl_bind_param! {i128, hugeint}
 impl_bind_param_for_primitive! {u8, uint8}
 impl_bind_param_for_primitive! {u16, uint16}
 impl_bind_param_for_primitive! {u32, uint32}
@@ -100,7 +100,6 @@ impl_bind_param_for_primitive! {&str, varchar_length}
 impl_bind_param! {NaiveDate, date}
 impl_bind_param! {NaiveTime, time}
 impl_bind_param! {NaiveDateTime, timestamp}
-
 impl_bind_param_for_primitive! {&[u8], blob}
 
 unsafe impl BindParam for String {
@@ -111,5 +110,16 @@ unsafe impl BindParam for String {
     ) -> Result<(), &'static str> {
         stmt.bind_varchar_length(param_idx, &self)
             .map_err(|_| "duckdb_bind_varchar_length()")
+    }
+}
+
+unsafe impl<Tz: TimeZone> BindParam for DateTime<Tz> {
+    unsafe fn bind_param_unchecked(
+        self,
+        stmt: &PreparedStatementHandle,
+        param_idx: u64,
+    ) -> Result<(), &'static str> {
+        stmt.bind_timestamp(param_idx, self.into_duckdb())
+            .map_err(|_| "duckdb_bind_timestamp()")
     }
 }

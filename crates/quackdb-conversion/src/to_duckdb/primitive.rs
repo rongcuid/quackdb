@@ -1,11 +1,15 @@
 use std::ffi::{c_char, CStr};
 
-use quackdb_internal::{
-    ffi,
-    types::{i128_to_hugeint, TypeId},
-};
+use quackdb_internal::{ffi, types::TypeId};
 
 use super::{FromDuckDb, IntoDuckDb, ToDuckDbType};
+
+fn i128_to_hugeint(value: i128) -> ffi::duckdb_hugeint {
+    ffi::duckdb_hugeint {
+        upper: (value >> 64) as i64,
+        lower: value as u64,
+    }
+}
 
 macro_rules! impl_to_duckdb_for_primitive {
     ($ty:ty, $type_id:expr) => {

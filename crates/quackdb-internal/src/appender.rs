@@ -2,7 +2,7 @@ use paste::paste;
 use std::{ffi::CStr, ops::Deref, sync::Arc};
 use thiserror::Error;
 
-use crate::{connection::ConnectionHandle, ffi, types::i128_to_hugeint};
+use crate::{connection::ConnectionHandle, ffi};
 
 pub struct AppenderHandle {
     handle: ffi::duckdb_appender,
@@ -96,9 +96,8 @@ impl AppenderHandle {
     fn_append! {i16, int16}
     fn_append! {i32, int32}
     fn_append! {i64, int64}
-    pub fn append_hugeint(&self, value: i128) -> Result<(), AppendError> {
-        let h = i128_to_hugeint(value);
-        self.do_or_append_error(unsafe { ffi::duckdb_append_hugeint(**self, h) })
+    pub fn append_hugeint(&self, value: ffi::duckdb_hugeint) -> Result<(), AppendError> {
+        self.do_or_append_error(unsafe { ffi::duckdb_append_hugeint(**self, value) })
     }
     fn_append! {u8, uint8}
     fn_append! {u16, uint16}

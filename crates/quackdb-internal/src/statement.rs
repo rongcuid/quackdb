@@ -2,12 +2,7 @@ use std::{ffi::CStr, ops::Deref, sync::Arc};
 
 use thiserror::Error;
 
-use crate::{
-    arrow::ArrowResultHandle,
-    connection::ConnectionHandle,
-    ffi,
-    types::{i128_to_hugeint, TypeId},
-};
+use crate::{arrow::ArrowResultHandle, connection::ConnectionHandle, ffi, types::TypeId};
 
 #[derive(Debug)]
 pub struct PreparedStatementHandle {
@@ -101,9 +96,12 @@ impl PreparedStatementHandle {
         }
         Ok(())
     }
-    pub unsafe fn bind_hugeint(&self, param_idx: u64, val: i128) -> Result<(), BindError> {
-        let hugeint = i128_to_hugeint(val);
-        if ffi::duckdb_bind_hugeint(self.handle, param_idx, hugeint) != ffi::DuckDBSuccess {
+    pub unsafe fn bind_hugeint(
+        &self,
+        param_idx: u64,
+        val: ffi::duckdb_hugeint,
+    ) -> Result<(), BindError> {
+        if ffi::duckdb_bind_hugeint(self.handle, param_idx, val) != ffi::DuckDBSuccess {
             return Err(BindError());
         }
         Ok(())
@@ -111,16 +109,9 @@ impl PreparedStatementHandle {
     pub unsafe fn bind_decimal(
         &self,
         param_idx: u64,
-        width: u8,
-        scale: u8,
-        value: i128,
+        val: ffi::duckdb_decimal,
     ) -> Result<(), BindError> {
-        let decimal = ffi::duckdb_decimal {
-            width,
-            scale,
-            value: i128_to_hugeint(value),
-        };
-        if ffi::duckdb_bind_decimal(self.handle, param_idx, decimal) != ffi::DuckDBSuccess {
+        if ffi::duckdb_bind_decimal(self.handle, param_idx, val) != ffi::DuckDBSuccess {
             return Err(BindError());
         }
         Ok(())
