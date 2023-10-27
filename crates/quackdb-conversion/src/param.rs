@@ -44,7 +44,7 @@ where
     unsafe fn append_param_unchecked(self, appender: &AppenderHandle) -> Result<(), String> {
         match self {
             Some(t) => t.append_param_unchecked(appender),
-            None => appender.append_null(),
+            None => appender.append_null().map_err(|_| appender.error()),
         }
     }
 }
@@ -116,7 +116,7 @@ macro_rules! impl_append_param_for_value {
                 self,
                 appender: &AppenderHandle,
             ) -> Result<(), String> {
-                appender.$method(self)
+                appender.$method(self).map_err(|_| appender.error())
             }
         }
     };

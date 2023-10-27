@@ -53,6 +53,10 @@ Raw FFI handles can be accessed by dereferencing low level structures and used w
 * [x] Fix document build
 * [ ] Replacement scan
 * [ ] Ergonomic types
+  * [x] Rust primitive types to/from DuckDb types
+  * [x] Chrono to/from DuckDb
+  * [ ] Rust primitive to Arrow 
+  * [ ] Chrono to Arrow
 
 ## Roadmap -- Future
 

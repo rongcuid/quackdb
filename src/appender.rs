@@ -10,8 +10,6 @@ pub struct Appender {
 pub enum AppenderError {
     #[error("appender flush: {0}")]
     FlushError(String),
-    #[error("appender close: {0}")]
-    CloseError(String),
     #[error("appender error: {0}")]
     AppendError(String),
 }
@@ -20,21 +18,18 @@ impl Appender {
     pub fn flush(&self) -> Result<(), AppenderError> {
         self.handle.flush().map_err(AppenderError::FlushError)
     }
-    pub fn close(&self) -> Result<(), AppenderError> {
-        self.handle.close().map_err(AppenderError::CloseError)
-    }
     pub fn append<T: AppendParam>(&mut self, value: T) -> Result<&mut Self, AppenderError> {
         unsafe {
             value
                 .append_param_unchecked(&self.handle)
-                .map_err(AppenderError::AppendError)
+                .map_err(|_| AppenderError::AppendError(self.handle.error()))
                 .and(Ok(self))
         }
     }
     pub fn end_row(&mut self) -> Result<&mut Self, AppenderError> {
         self.handle
             .end_row()
-            .map_err(AppenderError::AppendError)
+            .map_err(|_| AppenderError::AppendError(self.handle.error()))
             .and(Ok(self))
     }
 }
