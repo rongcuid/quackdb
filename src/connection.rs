@@ -51,11 +51,12 @@ impl Connection {
         unsafe {
             let mut result: ffi::duckdb_arrow = std::mem::zeroed();
             let r = ffi::duckdb_query_arrow(**self, cstr.as_ptr(), &mut result);
-            let h = ArrowResultHandle::from_raw_connection(result, self.handle.clone());
+            let h: ArrowResult =
+                ArrowResultHandle::from_raw_connection(result, self.handle.clone()).into();
             if r != ffi::DuckDBSuccess {
                 return Err(ConnectionError::QueryError(h.error()));
             }
-            Ok(h.into())
+            Ok(h)
         }
     }
 
@@ -147,7 +148,7 @@ mod test {
         assert_eq!(r4.rows_changed(), 0);
         let qr = conn.query(r"SELECT * FROM tbl").unwrap();
 
-        let rec = unsafe { qr.handle.query_array().unwrap().unwrap() };
+        let rec = unsafe { qr.query_array().unwrap() };
         assert_eq!(*rec.column(0).data_type(), DataType::Int32);
 
         let mut qr = conn

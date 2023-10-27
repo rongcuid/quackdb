@@ -34,16 +34,15 @@ where
             Some(Ok(b))
         } else {
             // Get another batch from results
-            let rec = unsafe { self.result.handle.query_array() };
+            let rec = unsafe { self.result.query_array() };
             match rec {
-                Ok(Ok(rec)) if rec.num_rows() == 0 => None,
-                Ok(Ok(rec)) => {
+                Ok(rec) if rec.num_rows() == 0 => None,
+                Ok(rec) => {
                     let v = (self.f)(rec);
                     self.v = v.collect();
                     Some(Ok(self.v.pop_front().unwrap()))
                 }
-                Ok(Err(e)) => Some(Err(ArrowResultError::ArrowError(e))),
-                Err(err) => Some(Err(ArrowResultError::QueryNextError(err))),
+                Err(e) => Some(Err(e)),
             }
         }
     }

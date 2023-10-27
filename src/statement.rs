@@ -73,7 +73,8 @@ impl PreparedStatement {
         unsafe {
             let mut result: ffi::duckdb_arrow = std::mem::zeroed();
             let r = ffi::duckdb_execute_prepared_arrow(**self, &mut result);
-            let h = ArrowResultHandle::from_raw_statement(result, self.handle.clone());
+            let h: ArrowResult =
+                ArrowResultHandle::from_raw_statement(result, self.handle.clone()).into();
             if r != ffi::DuckDBSuccess {
                 return Err(PreparedStatementError::ExecuteError(h.error()));
             }
