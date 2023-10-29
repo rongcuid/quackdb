@@ -32,7 +32,7 @@ Raw FFI handles can be accessed by dereferencing either high level or wrapper st
 | Statements        | Yes        |
 | Appender          | Yes        |
 | Table Functions   | Almost     |
-| Replacement Scans | No         |
+| Replacement Scans | Yes        |
 
 * Query results require working with [arrow](https://docs.rs/arrow/latest/arrow/) `RecordBatch` directly
 * Table functions are supported, but it has to work with data chunks directly via FFI
