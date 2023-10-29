@@ -13,10 +13,8 @@ use quackdb_internal::{
 };
 
 use crate::{
-    config::Config,
-    connection::Connection,
-    cutils::option_path_to_cstring,
-    replacement_scan::{ReplacementScanError, ReplacementScanInfo},
+    config::Config, connection::Connection, cutils::option_path_to_cstring,
+    replacement_scan::ReplacementScanInfo,
 };
 
 #[derive(Debug)]

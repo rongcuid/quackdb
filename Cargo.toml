@@ -33,7 +33,6 @@ bundled = ["quackdb-internal/bundled"]
 
 [dependencies]
 thiserror = "1"
-once_cell = "1"
 cstr = "0.2"
 
 arrow = { workspace = true }

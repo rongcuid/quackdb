@@ -2,7 +2,7 @@ mod primitive;
 pub use primitive::*;
 
 mod chrono;
-use crate::type_id::TypeId;
+use crate::{handles::LogicalTypeHandle, type_id::TypeId};
 pub use chrono::*;
 
 /// Rust primitive types to duckdb types
@@ -10,10 +10,10 @@ pub trait ToDuckDbType {
     const DUCKDB_TYPE_ID: TypeId;
     /// Representation to interface with DuckDb
     type DuckDbRepresentation;
-    // /// Create a duckdb logical type structure for this type
-    // fn logical_type() -> LogicalTypeHandle {
-    //     unsafe { LogicalTypeHandle::from_id(Self::DUCKDB_TYPE_ID) }
-    // }
+    /// Create a duckdb logical type structure for this type
+    fn logical_type() -> LogicalTypeHandle {
+        unsafe { LogicalTypeHandle::from_id(Self::DUCKDB_TYPE_ID) }
+    }
 }
 
 pub trait IntoDuckDb

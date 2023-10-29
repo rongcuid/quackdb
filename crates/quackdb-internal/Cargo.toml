@@ -24,5 +24,6 @@ strum = { workspace = true, features = ["derive"] }
 
 libduckdb-sys = { workspace = true }
 
+serde = { workspace = true }
 arrow = { workspace = true, features = ["ffi"] }
 chrono = { workspace = true }
