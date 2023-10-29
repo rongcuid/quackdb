@@ -2,7 +2,6 @@ use cstr::cstr;
 use std::{
     ffi::{c_char, c_void, CStr, CString, NulError},
     ops::Deref,
-    os::unix::prelude::OsStrExt,
     path::Path,
     ptr,
     sync::Arc,

@@ -1,6 +1,5 @@
 use std::{
-    ffi::{CStr, CString, NulError},
-    marker::PhantomData,
+    ffi::{CString, NulError},
     ops::Deref,
 };
 

@@ -81,7 +81,7 @@ impl PreparedStatement {
             if r != ffi::DuckDBSuccess {
                 return Err(PreparedStatementError::ExecuteError(h.error()));
             }
-            Ok(h.into())
+            Ok(h)
         }
     }
 }
