@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- High level table function register
+
 ### Changed
 - `TypeId` uses `strum::FromRepr`
 - Removed C path utils
+- Changed some naming convention
 
 ### Removed
 - Cleaned up unused code
