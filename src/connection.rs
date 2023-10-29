@@ -9,7 +9,10 @@ use quackdb_internal::{
     handles::{AppenderHandle, ArrowResultHandle, ConnectionHandle, PreparedStatementHandle},
 };
 
-use crate::{appender::Appender, arrow::ArrowResult, statement::PreparedStatement};
+use crate::{
+    appender::Appender, arrow::ArrowResult, statement::PreparedStatement,
+    table_function::TableFunction,
+};
 
 #[derive(Debug)]
 pub struct Connection {
@@ -26,6 +29,8 @@ pub enum ConnectionError {
     PrepareError(String),
     #[error("appender error: {0}")]
     AppenderError(String),
+    #[error("register table function error")]
+    RegisterTableFunctionError,
     #[error(transparent)]
     NulError(#[from] NulError),
 }
@@ -96,17 +101,14 @@ impl Connection {
             }
         }
     }
-    // pub fn register_table_function(
-    //     &mut self,
-    //     function: Arc<TableFunctionHandle>,
-    // ) -> Result<(), ()> {
-    //     let r = unsafe { ffi::duckdb_register_table_function(**self, **function) };
-    //     if r != ffi::DuckDBSuccess {
-    //         return Err(());
-    //     }
-    //     self._table_functions.push(function);
-    //     Ok(())
-    // }
+    pub fn register_table_function(
+        &mut self,
+        function: &TableFunction,
+    ) -> Result<(), ConnectionError> {
+        self.handle
+            .register_table_function(function.handle.clone())
+            .map_err(|_| ConnectionError::RegisterTableFunctionError)
+    }
 }
 
 impl Deref for Connection {

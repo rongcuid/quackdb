@@ -3,26 +3,28 @@ use std::ops::Deref;
 use crate::ffi;
 
 #[derive(Debug)]
-pub struct ConfigHandle(ffi::duckdb_config);
+pub struct ConfigHandle {
+    raw: ffi::duckdb_config,
+}
 
 impl Deref for ConfigHandle {
     type Target = ffi::duckdb_config;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.raw
     }
 }
 
 impl ConfigHandle {
     /// # Safety
-    /// Takes ownership
+    /// * Takes ownership of `raw`
     pub unsafe fn from_raw(raw: ffi::duckdb_config) -> Self {
-        Self(raw)
+        Self { raw }
     }
 }
 
 impl Drop for ConfigHandle {
     fn drop(&mut self) {
-        unsafe { ffi::duckdb_destroy_config(&mut self.0) };
+        unsafe { ffi::duckdb_destroy_config(&mut self.raw) };
     }
 }

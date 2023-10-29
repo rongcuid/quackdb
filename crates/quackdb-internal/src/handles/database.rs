@@ -3,26 +3,21 @@ use std::{ops::Deref, sync::Arc};
 use crate::ffi;
 
 #[derive(Debug)]
-pub struct DatabaseHandle(ffi::duckdb_database);
+pub struct DatabaseHandle {
+    raw: ffi::duckdb_database,
+}
 
 impl DatabaseHandle {
     /// # Safety
-    /// Takes ownership
+    /// * Takes ownership of `raw`
     pub unsafe fn from_raw(raw: ffi::duckdb_database) -> Arc<Self> {
-        Arc::new(Self(raw))
-    }
-
-    /// # Safety
-    /// * Ensure all children are closed
-    /// * Don't use this object afterwards
-    pub unsafe fn close(&mut self) {
-        ffi::duckdb_close(&mut self.0);
+        Arc::new(Self { raw })
     }
 }
 
 impl Drop for DatabaseHandle {
     fn drop(&mut self) {
-        unsafe { self.close() }
+        unsafe { ffi::duckdb_close(&mut self.raw) }
     }
 }
 
@@ -30,6 +25,6 @@ impl Deref for DatabaseHandle {
     type Target = ffi::duckdb_database;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.raw
     }
 }

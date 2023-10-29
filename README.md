@@ -49,12 +49,12 @@ Raw FFI handles can be accessed by dereferencing either high level or wrapper st
 
 ## Roadmap
 
-* [ ] Full support of table function
-* [ ] Serde support
+* [ ] Make naming consistent
 * [ ] Clean up error types
 * [ ] Clean up receivers
-* [ ] Make naming consistent
+* [ ] Serde support
+* [ ] Data chunk support
 * [ ] Comprehensive documentation
 * [ ] Comprehensive tests
-* [ ] Streaming arrow (optional)
+* [ ] Streaming arrow
 

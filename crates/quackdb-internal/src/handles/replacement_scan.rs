@@ -4,12 +4,14 @@ use crate::ffi;
 
 #[derive(Debug)]
 pub struct ReplacementScanInfoHandle {
-    handle: ffi::duckdb_replacement_scan_info,
+    raw: ffi::duckdb_replacement_scan_info,
 }
 
 impl ReplacementScanInfoHandle {
-    pub unsafe fn from_raw(handle: ffi::duckdb_replacement_scan_info) -> Self {
-        Self { handle }
+    /// # Safety
+    /// * Takes ownership of `raw`
+    pub unsafe fn from_raw(raw: ffi::duckdb_replacement_scan_info) -> Self {
+        Self { raw }
     }
 }
 
@@ -17,6 +19,6 @@ impl Deref for ReplacementScanInfoHandle {
     type Target = ffi::duckdb_replacement_scan_info;
 
     fn deref(&self) -> &Self::Target {
-        &self.handle
+        &self.raw
     }
 }

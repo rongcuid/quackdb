@@ -8,13 +8,13 @@ use crate::{ffi, handles::LogicalTypeHandle};
 
 #[derive(Debug)]
 pub struct TableFunctionHandle {
-    handle: ffi::duckdb_table_function,
+    raw: ffi::duckdb_table_function,
 }
 
 impl TableFunctionHandle {
     pub fn create() -> Arc<Self> {
         Arc::new(Self {
-            handle: unsafe { ffi::duckdb_create_table_function() },
+            raw: unsafe { ffi::duckdb_create_table_function() },
         })
     }
     pub fn set_name(&self, name: &CStr) {
@@ -64,7 +64,7 @@ impl TableFunctionHandle {
 
 impl Drop for TableFunctionHandle {
     fn drop(&mut self) {
-        unsafe { ffi::duckdb_destroy_table_function(&mut self.handle) }
+        unsafe { ffi::duckdb_destroy_table_function(&mut self.raw) }
     }
 }
 
@@ -72,6 +72,6 @@ impl Deref for TableFunctionHandle {
     type Target = ffi::duckdb_table_function;
 
     fn deref(&self) -> &Self::Target {
-        &self.handle
+        &self.raw
     }
 }
