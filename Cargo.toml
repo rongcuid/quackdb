@@ -29,6 +29,7 @@ categories = ["database"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+default = ["bundled"]
 bundled = ["quackdb-internal/bundled"]
 
 [dependencies]
@@ -36,6 +37,7 @@ thiserror = "1"
 cstr = "0.2"
 
 arrow = { workspace = true }
+libc = "0.2"
 
 quackdb-internal = { path = "./crates/quackdb-internal", version = "0.5.0-dev" }
 

@@ -127,10 +127,11 @@ impl Deref for Connection {
 mod test {
     use arrow::{
         array::{AsArray, PrimitiveArray},
-        datatypes::{DataType, Int32Type},
+        datatypes::{DataType, Int32Type, Int64Type},
+        error::ArrowError,
     };
 
-    use crate::{appender::AppenderError, database::Database};
+    use crate::{appender::AppenderError, database::Database, error::QuackError};
 
     use super::{Connection, ConnectionError};
 
@@ -300,5 +301,36 @@ mod test {
             })
             .collect::<Vec<_>>();
         assert_eq!(r, vec![(3, "3".to_owned())]);
+    }
+    #[test]
+    fn test_arrow_1() -> Result<(), QuackError> {
+        // Create DB
+        let db = Database::open(None)?;
+        let conn = db.connect()?;
+        conn.query(
+            r"
+            CREATE TABLE tbl(id BIGINT);
+        ",
+        )?;
+        // Insert data
+        let mut appender = conn.appender(None, "tbl")?;
+        for i in 0..1000000i64 {
+            appender.append(i)?.end_row()?;
+        }
+        drop(appender);
+        // Query data
+        let res = conn.query("SELECT * FROM tbl")?;
+        let mut stream = res.into_stream()?;
+        let sum: i64 = stream.try_fold(0, |acc, r| -> Result<i64, ArrowError> {
+            let r = r?;
+            Ok(acc
+                + r.column(0)
+                    .as_primitive::<Int64Type>()
+                    .iter()
+                    .filter_map(|x| x)
+                    .sum::<i64>())
+        })?;
+        assert_eq!(sum, (0..1000000i64).sum::<i64>());
+        Ok(())
     }
 }
