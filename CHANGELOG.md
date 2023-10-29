@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `TypeId` uses `strum::FromRepr`
+- Removed C path utils
 
 ### Removed
 - Cleaned up unused code

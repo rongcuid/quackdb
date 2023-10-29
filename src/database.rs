@@ -2,6 +2,7 @@ use cstr::cstr;
 use std::{
     ffi::{c_char, c_void, CStr, CString, NulError},
     ops::Deref,
+    os::unix::prelude::OsStrExt,
     path::Path,
     ptr,
     sync::Arc,
@@ -12,10 +13,7 @@ use quackdb_internal::{
     handles::{ConnectionHandle, DatabaseHandle, ReplacementScanInfoHandle},
 };
 
-use crate::{
-    config::Config, connection::Connection, cutils::option_path_to_cstring,
-    replacement_scan::ReplacementScanInfo,
-};
+use crate::{config::Config, connection::Connection, replacement_scan::ReplacementScanInfo};
 
 #[derive(Debug)]
 pub struct Database {
@@ -46,12 +44,28 @@ impl Database {
 
     /// Extended open
     pub fn open_ext(path: Option<&Path>, config: Option<&Config>) -> Result<Self, DatabaseError> {
-        let c_path = option_path_to_cstring(path)?;
+        let c_path = path
+            .map(|p| -> Result<CString, DatabaseError> {
+                let path_str = p.to_str().ok_or(DatabaseError::OpenError(format!(
+                    "bad path: {}",
+                    p.display()
+                )))?;
+                let cstr = CString::new(path_str)
+                    .map_err(|_| DatabaseError::OpenError(format!("bad path: {}", p.display())))?;
+                Ok(cstr)
+            })
+            .transpose()?;
         let mut db: ffi::duckdb_database = ptr::null_mut();
         let mut err = ptr::null_mut();
-        let path = c_path.map(|p| p.as_ptr()).unwrap_or(ptr::null());
         let config = config.map(|c| ***c).unwrap_or(ptr::null_mut());
-        let r = unsafe { ffi::duckdb_open_ext(path, &mut db, config, &mut err) };
+        let r = unsafe {
+            ffi::duckdb_open_ext(
+                c_path.map(|p| p.as_ptr()).unwrap_or(ptr::null()),
+                &mut db,
+                config,
+                &mut err,
+            )
+        };
         if r != ffi::DuckDBSuccess {
             let err_cstr = unsafe { CStr::from_ptr(err) };
             let err_str = err_cstr.to_string_lossy().to_string();
