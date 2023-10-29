@@ -47,14 +47,6 @@ Raw FFI handles can be accessed by dereferencing either high level or wrapper st
 * Low level API use Rust types
 * Low level API follow DuckDB naming
 
-## Roadmap -- 0.4.0
-* [x] Fix document build
-* [x] DuckDb types conversion
-  * [x] Rust primitive types to/from DuckDb types
-  * [x] Chrono to/from DuckDb
-* [x] Remove intermediate API
-* [x] Replacement scans
-
 ## Roadmap -- 0.5.0
 * [ ] Compound logical type in Rust
 

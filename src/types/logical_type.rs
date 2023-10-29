@@ -1,10 +1,17 @@
 use std::ops::Deref;
 
 use quackdb_internal::{ffi, handles::LogicalTypeHandle, type_id::TypeId};
+use thiserror::Error;
 
 #[derive(Debug)]
 pub struct LogicalType {
     handle: LogicalTypeHandle,
+}
+
+#[derive(Error, Debug)]
+pub enum LogicalTypeError {
+    #[error("duckdb_create_logical_type() should not be used with DUCKDB_TYPE_DECIMAL")]
+    DecimalError,
 }
 
 impl From<LogicalTypeHandle> for LogicalType {
@@ -13,13 +20,14 @@ impl From<LogicalTypeHandle> for LogicalType {
     }
 }
 
-impl From<TypeId> for LogicalType {
-    fn from(value: TypeId) -> Self {
+impl TryFrom<TypeId> for LogicalType {
+    type Error = LogicalTypeError;
+    fn try_from(value: TypeId) -> Result<Self, Self::Error> {
         if matches!(value, TypeId::Decimal) {
-            panic!("duckdb_create_logical_type() should not be used with DUCKDB_TYPE_DECIMAL")
+            return Err(LogicalTypeError::DecimalError);
         }
         let handle = unsafe { LogicalTypeHandle::from_id(value) };
-        Self::from(handle)
+        Ok(Self::from(handle))
     }
 }
 
