@@ -1,7 +1,4 @@
-use std::{
-    ffi::{CString, NulError},
-    ops::Deref,
-};
+use std::{ffi::CString, ops::Deref};
 
 use quackdb_internal::{ffi, handles::ConfigHandle};
 
@@ -17,8 +14,6 @@ pub enum ConfigError {
     CreateError,
     #[error("config set error: {0}:{1}")]
     SetError(String, String),
-    #[error(transparent)]
-    NulError(#[from] NulError),
 }
 
 impl Config {
@@ -35,8 +30,10 @@ impl Config {
     }
     pub fn set<T: ToString>(&mut self, key: &str, value: T) -> Result<&mut Config, ConfigError> {
         let value = value.to_string();
-        let c_key = CString::new(key)?;
-        let c_value = CString::new(value.clone())?;
+        let c_key =
+            CString::new(key).map_err(|_| ConfigError::SetError(key.to_owned(), value.clone()))?;
+        let c_value = CString::new(value.clone())
+            .map_err(|_| ConfigError::SetError(key.to_owned(), value.clone()))?;
         let state =
             unsafe { ffi::duckdb_set_config(*self.handle, c_key.as_ptr(), c_value.as_ptr()) };
         if state != ffi::DuckDBSuccess {

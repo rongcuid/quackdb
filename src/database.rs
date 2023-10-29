@@ -1,8 +1,8 @@
 use cstr::cstr;
 use std::{
-    ffi::{c_char, c_void, CStr, CString, NulError},
+    ffi::{c_char, c_void, CStr, CString},
     ops::Deref,
-    path::Path,
+    path::{Path, PathBuf},
     ptr,
     sync::Arc,
 };
@@ -21,12 +21,12 @@ pub struct Database {
 
 #[derive(thiserror::Error, Debug)]
 pub enum DatabaseError {
+    #[error("bad path: `{0}`")]
+    PathError(PathBuf),
     #[error("duckdb open error: {0}")]
     OpenError(String),
     #[error("duckdb connect error")]
     ConnectError,
-    #[error(transparent)]
-    NulError(#[from] NulError),
 }
 
 impl From<Arc<DatabaseHandle>> for Database {
@@ -45,26 +45,19 @@ impl Database {
     pub fn open_ext(path: Option<&Path>, config: Option<&Config>) -> Result<Self, DatabaseError> {
         let c_path = path
             .map(|p| -> Result<CString, DatabaseError> {
-                let path_str = p.to_str().ok_or(DatabaseError::OpenError(format!(
-                    "bad path: {}",
-                    p.display()
-                )))?;
-                let cstr = CString::new(path_str)
-                    .map_err(|_| DatabaseError::OpenError(format!("bad path: {}", p.display())))?;
+                let path_str = p
+                    .to_str()
+                    .ok_or_else(|| DatabaseError::PathError(p.to_owned()))?;
+                let cstr =
+                    CString::new(path_str).map_err(|_| DatabaseError::PathError(p.to_owned()))?;
                 Ok(cstr)
             })
             .transpose()?;
+        let path_ptr = c_path.map(|p| p.as_ptr()).unwrap_or(ptr::null());
         let mut db: ffi::duckdb_database = ptr::null_mut();
         let mut err = ptr::null_mut();
         let config = config.map(|c| ***c).unwrap_or(ptr::null_mut());
-        let r = unsafe {
-            ffi::duckdb_open_ext(
-                c_path.map(|p| p.as_ptr()).unwrap_or(ptr::null()),
-                &mut db,
-                config,
-                &mut err,
-            )
-        };
+        let r = unsafe { ffi::duckdb_open_ext(path_ptr, &mut db, config, &mut err) };
         if r != ffi::DuckDBSuccess {
             let err_cstr = unsafe { CStr::from_ptr(err) };
             let err_str = err_cstr.to_string_lossy().to_string();

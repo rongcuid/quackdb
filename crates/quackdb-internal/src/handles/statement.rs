@@ -1,7 +1,5 @@
 use std::{ops::Deref, sync::Arc};
 
-use thiserror::Error;
-
 use crate::ffi;
 
 use super::ConnectionHandle;
@@ -11,10 +9,6 @@ pub struct PreparedStatementHandle {
     raw: ffi::duckdb_prepared_statement,
     _parent: Arc<ConnectionHandle>,
 }
-
-#[derive(Error, Debug)]
-#[error("prepared statement bind error")]
-pub struct BindError();
 
 impl Deref for PreparedStatementHandle {
     type Target = ffi::duckdb_prepared_statement;

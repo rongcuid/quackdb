@@ -1,5 +1,5 @@
 use std::{
-    ffi::{CStr, CString, NulError},
+    ffi::{CStr, CString},
     ops::Deref,
     sync::Arc,
 };
@@ -21,18 +21,20 @@ pub struct Connection {
 
 #[derive(thiserror::Error, Debug)]
 pub enum ConnectionError {
-    #[error("duckdb_connect() error")]
-    ConnectError,
-    #[error("duckdb_query() error: {0}")]
+    #[error("bad query: {0}")]
+    BadQuery(String),
+    #[error("bad schema: {0}")]
+    BadSchema(String),
+    #[error("bad table: {0}")]
+    BadTable(String),
+    #[error("query error: {0}")]
     QueryError(String),
-    #[error("duckdb_prepare() error: {0}")]
+    #[error("prepare error: {0}")]
     PrepareError(String),
     #[error("appender error: {0}")]
     AppenderError(String),
     #[error("register table function error")]
     RegisterTableFunctionError,
-    #[error(transparent)]
-    NulError(#[from] NulError),
 }
 
 impl From<Arc<ConnectionHandle>> for Connection {
@@ -51,8 +53,8 @@ impl Connection {
     }
 
     /// Perform a query and return the handle.
-    pub fn query(&self, sql: &str) -> Result<ArrowResult, ConnectionError> {
-        let cstr = CString::new(sql)?;
+    pub fn query(&self, query: &str) -> Result<ArrowResult, ConnectionError> {
+        let cstr = CString::new(query).map_err(|_| ConnectionError::BadQuery(query.to_owned()))?;
         unsafe {
             let mut result: ffi::duckdb_arrow = std::mem::zeroed();
             let r = ffi::duckdb_query_arrow(**self, cstr.as_ptr(), &mut result);
@@ -66,7 +68,7 @@ impl Connection {
     }
 
     pub fn prepare(&self, query: &str) -> Result<PreparedStatement, ConnectionError> {
-        let cstr = CString::new(query)?;
+        let cstr = CString::new(query).map_err(|_| ConnectionError::BadQuery(query.to_owned()))?;
         unsafe {
             let mut prepare: ffi::duckdb_prepared_statement = std::mem::zeroed();
             let res = ffi::duckdb_prepare(**self, cstr.as_ptr(), &mut prepare);
@@ -81,8 +83,10 @@ impl Connection {
     }
 
     pub fn appender(&self, schema: Option<&str>, table: &str) -> Result<Appender, ConnectionError> {
-        let schema = schema.map(CString::new).transpose()?;
-        let table = CString::new(table)?;
+        let schema = schema
+            .map(|s| CString::new(s).map_err(|_| ConnectionError::BadSchema(s.to_owned())))
+            .transpose()?;
+        let table = CString::new(table).map_err(|_| ConnectionError::BadTable(table.to_owned()))?;
         unsafe {
             let mut out_appender: ffi::duckdb_appender = std::mem::zeroed();
             let r = ffi::duckdb_appender_create(

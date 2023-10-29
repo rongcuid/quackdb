@@ -49,7 +49,6 @@ Raw FFI handles can be accessed by dereferencing either high level or wrapper st
 
 ## Roadmap
 
-* [ ] Clean up error types
 * [ ] Clean up receivers
 * [ ] Clean up table function
 * [ ] Remove intermediate handles that does not need `Drop` implementations

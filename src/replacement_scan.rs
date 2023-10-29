@@ -1,7 +1,4 @@
-use std::{
-    ffi::{CString, NulError},
-    ops::Deref,
-};
+use std::{ffi::CString, ops::Deref};
 
 use quackdb_internal::{ffi, handles::ReplacementScanInfoHandle};
 use thiserror::Error;
@@ -13,10 +10,10 @@ pub struct ReplacementScanInfo {
 
 #[derive(Error, Debug)]
 pub enum ReplacementScanError {
+    #[error("bad function name: {0}")]
+    BadFunctionName(String),
     #[error("{0}")]
     ErrorMessage(String),
-    #[error(transparent)]
-    NulError(#[from] NulError),
 }
 
 impl From<ReplacementScanInfoHandle> for ReplacementScanInfo {
@@ -27,7 +24,8 @@ impl From<ReplacementScanInfoHandle> for ReplacementScanInfo {
 
 impl ReplacementScanInfo {
     pub fn set_function_name(&self, function_name: &str) -> Result<(), ReplacementScanError> {
-        let cstr = CString::new(function_name)?;
+        let cstr = CString::new(function_name)
+            .map_err(|_| ReplacementScanError::BadFunctionName(function_name.to_owned()))?;
         unsafe { ffi::duckdb_replacement_scan_set_function_name(**self, cstr.as_ptr()) }
         Ok(())
     }
