@@ -47,10 +47,7 @@ Raw FFI handles can be accessed by dereferencing either high level or wrapper st
 * Low level API use Rust types
 * Low level API follow DuckDB naming
 
-## Roadmap -- 0.5.0
-* [ ] Compound logical type in Rust
-
-## Roadmap -- Future
+## Roadmap
 
 * [ ] Full support of table function
 * [ ] Serde support
