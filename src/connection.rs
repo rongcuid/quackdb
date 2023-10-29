@@ -333,4 +333,34 @@ mod test {
         assert_eq!(sum, (0..1000000i64).sum::<i64>());
         Ok(())
     }
+    #[test]
+    fn test_arrow_2() -> Result<(), QuackError> {
+        // Create DB
+        let db = Database::open(None)?;
+        let conn = db.connect()?;
+        conn.query(
+            r"
+            CREATE TABLE tbl(id BIGINT);
+        ",
+        )?;
+        // Insert data
+        let mut appender = conn.appender(None, "tbl")?;
+        for i in 0..1000000i64 {
+            appender.append(i)?.end_row()?;
+        }
+        drop(appender);
+        // Query data
+        let stream = conn.query("SELECT * FROM tbl")?.into_stream()?;
+        let recs = stream.collect::<Result<Vec<_>, ArrowError>>()?;
+        let sum = recs.iter().fold(0, |acc, r| {
+            acc + r
+                .column(0)
+                .as_primitive::<Int64Type>()
+                .iter()
+                .filter_map(|x| x)
+                .sum::<i64>()
+        });
+        assert_eq!(sum, (0..1000000i64).sum::<i64>());
+        Ok(())
+    }
 }

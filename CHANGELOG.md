@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - High level table function register
+- Arrow streaming interface
+- Top level error type
 
 ### Changed
 - `TypeId` uses `strum::FromRepr`

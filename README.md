@@ -49,7 +49,7 @@ Raw FFI handles can be accessed by dereferencing either high level or wrapper st
 
 ## Roadmap
 
-* [ ] Arrow streaming support
+* [x] Arrow streaming support
 * [ ] Clean up receivers
 * [ ] Clean up table function
 * [ ] Remove intermediate handles that does not need `Drop` implementations
