@@ -1,4 +1,4 @@
-use std::{ffi::CStr, ops::Deref};
+use std::ops::Deref;
 
 use crate::{ffi, type_id::TypeId};
 
@@ -10,10 +10,10 @@ impl LogicalTypeHandle {
         Self(handle)
     }
     pub unsafe fn from_id(type_: TypeId) -> Self {
-        Self::from_raw(ffi::duckdb_create_logical_type(type_.to_raw()))
+        Self::from_raw(ffi::duckdb_create_logical_type(type_ as _))
     }
     pub fn type_id(&self) -> Option<TypeId> {
-        unsafe { TypeId::from_raw(ffi::duckdb_get_type_id(self.0)) }
+        unsafe { TypeId::from_repr(ffi::duckdb_get_type_id(self.0)) }
     }
 }
 
