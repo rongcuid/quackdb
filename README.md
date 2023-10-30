@@ -52,6 +52,8 @@ Raw FFI handles can be accessed by dereferencing either high level or wrapper st
 * [ ] Prelude module
 * [ ] Precise error checking in arrow streaming interface
 * [ ] Registering arrow data
+* [ ] Extracted statements
+* [ ] Decimal type
 * [ ] Clean up receivers
 * [ ] Clean up table function
 * [ ] Remove intermediate handles that does not need `Drop` implementations
