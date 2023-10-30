@@ -17,9 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed C path utils
 - Changed some naming convention
 - Removed all `NulError` from error types
+- `error()` functions are now unsafe
 
 ### Removed
 - Cleaned up unused code
+- Removed some basic tests
 
 ## [0.4.0] - 2023-10-27
 

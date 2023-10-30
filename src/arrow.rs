@@ -1,5 +1,3 @@
-mod iters;
-
 use std::{
     ffi::{c_char, CStr},
     ops::Deref,
@@ -17,8 +15,6 @@ use arrow::{
 use thiserror::Error;
 
 use quackdb_internal::{ffi, handles::ArrowResultHandle};
-
-use iters::TryBatchMap;
 
 #[derive(Debug)]
 pub struct ArrowResult {
@@ -66,59 +62,6 @@ impl ArrowResult {
             private_data: Box::into_raw(Box::new(self)).cast(),
         };
         Ok(ArrowArrayStreamReader::try_new(stream)?)
-    }
-    /// # Safety
-    /// The result must be consumed before calling this again
-    pub unsafe fn query_array(&self) -> Result<RecordBatch, ArrowResultError> {
-        let mut out_schema = FFI_ArrowSchema::empty();
-        if unsafe {
-            ffi::duckdb_query_arrow_schema(
-                **self,
-                &mut std::ptr::addr_of_mut!(out_schema) as *mut _ as *mut ffi::duckdb_arrow_schema,
-            )
-        } != ffi::DuckDBSuccess
-        {
-            return Err(ArrowResultError::QueryNextError(
-                "duckdb_query_arrow_schema()",
-            ));
-        }
-        let mut out_array = FFI_ArrowArray::empty();
-        if unsafe {
-            ffi::duckdb_query_arrow_array(
-                **self,
-                &mut std::ptr::addr_of_mut!(out_array) as *mut _ as *mut ffi::duckdb_arrow_array,
-            )
-        } != ffi::DuckDBSuccess
-        {
-            return Err(ArrowResultError::QueryNextError(
-                "duckdb_query_arrow_array()",
-            ));
-        }
-        from_ffi(out_array, &out_schema)
-            .map(StructArray::from)
-            .map(RecordBatch::from)
-            .map_err(ArrowResultError::from)
-    }
-
-    /// Map each record batch into rows, take the results as iterators. Each item is fallable
-    pub fn try_batch_map_into<B, I, F>(self, f: F) -> TryBatchMap<B, F>
-    where
-        I: Iterator<Item = B>,
-        F: FnMut(RecordBatch) -> I,
-    {
-        TryBatchMap::new(self, f)
-    }
-
-    /// Map each record batch into rows, take the results as iterators.
-    ///
-    /// # Panics
-    /// The iterator might panic if an error is encountered
-    pub fn batch_map_into<B, I, F>(self, f: F) -> impl Iterator<Item = B>
-    where
-        I: Iterator<Item = B>,
-        F: FnMut(RecordBatch) -> I,
-    {
-        TryBatchMap::new(self, f).map(|r| r.expect("batch_map_into"))
     }
 }
 

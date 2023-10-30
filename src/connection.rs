@@ -142,165 +142,19 @@ mod test {
         assert!(conn.is_ok());
     }
     #[test]
-    fn test_basic() {
-        let db = Database::open(None).unwrap();
-        let conn = db.connect().unwrap();
-        let r1 = conn.query(r"CREATE TABLE tbl(id INTEGER)").unwrap();
+    fn test_basic() -> Result<(), QuackError> {
+        let db = Database::open(None)?;
+        let conn = db.connect()?;
+        let r1 = conn.query(r"CREATE TABLE tbl(id INTEGER)")?;
         assert_eq!(r1.rows_changed(), 0);
-        let r2 = conn.query(r"INSERT INTO tbl VALUES (0)").unwrap();
+        let r2 = conn.query(r"INSERT INTO tbl VALUES (0)")?;
         assert_eq!(r2.rows_changed(), 1);
-        let r3 = conn.query(r"INSERT INTO tbl VALUES (1), (2), (3)").unwrap();
+        let r3 = conn.query(r"INSERT INTO tbl VALUES (1), (2), (3)")?;
         assert_eq!(r3.rows_changed(), 3);
-        let r4 = conn.query(r"SELECT * FROM tbl").unwrap();
+        let r4 = conn.query(r"SELECT * FROM tbl")?;
         assert_eq!(r4.rows_changed(), 0);
-        let qr = conn.query(r"SELECT * FROM tbl").unwrap();
-
-        let rec = unsafe { qr.query_array().unwrap() };
-        assert_eq!(*rec.column(0).data_type(), DataType::Int32);
-
-        let mut qr = conn
-            .query(r"SELECT * FROM tbl")
-            .unwrap()
-            .batch_map_into(|rec| {
-                (0..rec.num_rows()).map(move |r| {
-                    let arr: PrimitiveArray<Int32Type> = rec.column(0).to_data().into();
-                    arr.value(r)
-                })
-            });
-        assert_eq!(qr.next(), Some(0));
-        assert_eq!(qr.next(), Some(1));
-        assert_eq!(qr.next(), Some(2));
-        assert_eq!(qr.next(), Some(3));
-        assert_eq!(qr.next(), None);
-    }
-    fn db1() -> Connection {
-        let db = Database::open(None).unwrap();
-        let conn = db.connect().unwrap();
-        conn.query(
-            r"
-            CREATE TABLE tbl(id INTEGER);
-            INSERT INTO tbl VALUES (0), (1), (2), (3);
-        ",
-        )
-        .unwrap();
-        conn
-    }
-    #[test]
-    fn test_statement_1() {
-        let conn = db1();
-        let stmt = conn.prepare("SELECT * FROM tbl").unwrap();
-        let r1 = stmt
-            .execute()
-            .unwrap()
-            .batch_map_into(|rec| {
-                (0..rec.num_rows()).map(move |r| {
-                    let arr: PrimitiveArray<Int32Type> = rec.column(0).to_data().into();
-                    arr.value(r)
-                })
-            })
-            .collect::<Vec<_>>();
-        assert_eq!(r1, vec![0, 1, 2, 3]);
-        let mut stmt = conn.prepare("INSERT INTO tbl VALUES (?)").unwrap();
-        for i in 4i32..8 {
-            stmt.reset().bind(i).unwrap();
-            stmt.execute().unwrap();
-        }
-        let r2 = conn
-            .prepare("SELECT * FROM tbl")
-            .unwrap()
-            .execute()
-            .unwrap()
-            .batch_map_into(|rec| {
-                (0..rec.num_rows()).map(move |r| {
-                    let arr: PrimitiveArray<Int32Type> = rec.column(0).to_data().into();
-                    arr.value(r)
-                })
-            })
-            .collect::<Vec<_>>();
-        assert_eq!(r2, vec![0, 1, 2, 3, 4, 5, 6, 7]);
-    }
-
-    fn db2() -> Connection {
-        let db = Database::open(None).unwrap();
-        let conn = db.connect().unwrap();
-        conn.query(
-            r"
-            CREATE TABLE tbl(id INTEGER, name TEXT);
-            INSERT INTO tbl VALUES (0, '0'), (1, '1'), (2, '2'), (3, '3');
-        ",
-        )
-        .unwrap();
-        conn
-    }
-    #[test]
-    fn test_statement_2() {
-        let conn = db2();
-        let mut stmt = conn.prepare("INSERT INTO tbl VALUES (?, ?)").unwrap();
-        for i in 4i32..8 {
-            stmt.reset().bind(i).unwrap().bind(i.to_string()).unwrap();
-            stmt.execute().unwrap();
-        }
-        let r2 = conn
-            .prepare("SELECT * FROM tbl WHERE id > 6")
-            .unwrap()
-            .execute()
-            .unwrap()
-            .batch_map_into(|rec| {
-                (0..rec.num_rows()).map(move |r| {
-                    let arr1 = rec.column(0).as_primitive::<Int32Type>();
-                    let arr2 = rec.column(1).as_string::<i32>();
-                    (arr1.value(r), arr2.value(r).to_owned())
-                })
-            })
-            .collect::<Vec<_>>();
-        assert_eq!(r2, vec![(7, "7".to_owned())]);
-    }
-    fn db3() -> Result<Connection, ConnectionError> {
-        let db = Database::open(None).unwrap();
-        let conn = db.connect().unwrap();
-        conn.query(
-            r"
-            CREATE TABLE tbl(id INTEGER, name TEXT);
-        ",
-        )?;
-        let mut appender = conn.appender(None, "tbl")?;
-        (|| -> Result<(), AppenderError> {
-            appender
-                .append(0)?
-                .append("0")?
-                .end_row()?
-                .append(1)?
-                .append("1")?
-                .end_row()?
-                .append(2)?
-                .append("2")?
-                .end_row()?
-                .append(3)?
-                .append("3")?
-                .end_row()?;
-            Ok(())
-        })()
-        .unwrap();
-
-        Ok(conn)
-    }
-    #[test]
-    fn test_appender_1() {
-        let conn = db3().unwrap();
-        let r = conn
-            .prepare("SELECT * FROM tbl WHERE id >= 3")
-            .unwrap()
-            .execute()
-            .unwrap()
-            .batch_map_into(|rec| {
-                (0..rec.num_rows()).map(move |r| {
-                    let arr1 = rec.column(0).as_primitive::<Int32Type>();
-                    let arr2 = rec.column(1).as_string::<i32>();
-                    (arr1.value(r), arr2.value(r).to_owned())
-                })
-            })
-            .collect::<Vec<_>>();
-        assert_eq!(r, vec![(3, "3".to_owned())]);
+        let qr = conn.query(r"SELECT * FROM tbl")?;
+        Ok(())
     }
     #[test]
     fn test_arrow_1() -> Result<(), QuackError> {

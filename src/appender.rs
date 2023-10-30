@@ -16,14 +16,16 @@ pub enum AppenderError {
 }
 
 impl Appender {
-    pub fn error(&self) -> String {
+    /// # Safety
+    /// There must actually be an error
+    pub unsafe fn error(&self) -> String {
         let err = unsafe { CStr::from_ptr(ffi::duckdb_appender_error(**self)) };
         err.to_string_lossy().into_owned()
     }
     pub fn flush(&self) -> Result<(), AppenderError> {
         match unsafe { ffi::duckdb_appender_flush(**self) } {
             ffi::DuckDBSuccess => Ok(()),
-            ffi::DuckDBError => Err(AppenderError::FlushError(self.error())),
+            ffi::DuckDBError => Err(AppenderError::FlushError(unsafe { self.error() })),
             _ => unreachable!(),
         }
     }
@@ -38,7 +40,7 @@ impl Appender {
     pub fn end_row(&mut self) -> Result<&mut Self, AppenderError> {
         match unsafe { ffi::duckdb_appender_end_row(**self) } {
             ffi::DuckDBSuccess => Ok(self),
-            ffi::DuckDBError => Err(AppenderError::AppendError(self.error())),
+            ffi::DuckDBError => Err(AppenderError::AppendError(unsafe { self.error() })),
             _ => unreachable!(),
         }
     }
