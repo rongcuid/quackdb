@@ -49,6 +49,7 @@ Raw FFI handles can be accessed by dereferencing either high level or wrapper st
 
 ## Roadmap
 
+* [ ] Prelude module
 * [ ] Precise error checking in arrow streaming interface
 * [ ] Registering arrow data
 * [ ] Clean up receivers
