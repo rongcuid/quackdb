@@ -13,7 +13,7 @@ strum = "0.25"
 [package]
 name = "quackdb"
 description = "Ergonomic binding to DuckDB"
-version = "0.5.0-dev"
+version = "0.5.0"
 edition = "2021"
 
 authors = ["Rongcui Dong <rongcuid@outlook.com>"]
@@ -39,7 +39,7 @@ cstr = "0.2"
 arrow = { workspace = true }
 libc = "0.2"
 
-quackdb-internal = { path = "./crates/quackdb-internal", version = "0.5.0-dev" }
+quackdb-internal = { path = "./crates/quackdb-internal", version = "0.5.0" }
 
 [dev-dependencies]
 tempfile = "3"
