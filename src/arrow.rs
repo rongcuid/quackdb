@@ -7,9 +7,8 @@ use std::{
 use cstr::cstr;
 
 use arrow::{
-    array::{RecordBatch, StructArray},
     error::ArrowError,
-    ffi::{from_ffi, FFI_ArrowArray, FFI_ArrowSchema},
+    ffi::{FFI_ArrowArray, FFI_ArrowSchema},
     ffi_stream::{ArrowArrayStreamReader, FFI_ArrowArrayStream},
 };
 use thiserror::Error;

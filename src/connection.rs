@@ -125,15 +125,9 @@ impl Deref for Connection {
 
 #[cfg(test)]
 mod test {
-    use arrow::{
-        array::{AsArray, PrimitiveArray},
-        datatypes::{DataType, Int32Type, Int64Type},
-        error::ArrowError,
-    };
+    use arrow::{array::AsArray, datatypes::Int64Type, error::ArrowError};
 
-    use crate::{appender::AppenderError, database::Database, error::QuackError};
-
-    use super::{Connection, ConnectionError};
+    use crate::{database::Database, error::QuackError};
 
     #[test]
     fn test_connect() {
@@ -153,7 +147,6 @@ mod test {
         assert_eq!(r3.rows_changed(), 3);
         let r4 = conn.query(r"SELECT * FROM tbl")?;
         assert_eq!(r4.rows_changed(), 0);
-        let qr = conn.query(r"SELECT * FROM tbl")?;
         Ok(())
     }
     #[test]
@@ -181,7 +174,7 @@ mod test {
                 + r.column(0)
                     .as_primitive::<Int64Type>()
                     .iter()
-                    .filter_map(|x| x)
+                    .flatten()
                     .sum::<i64>())
         })?;
         assert_eq!(sum, (0..1000000i64).sum::<i64>());
@@ -211,7 +204,7 @@ mod test {
                 .column(0)
                 .as_primitive::<Int64Type>()
                 .iter()
-                .filter_map(|x| x)
+                .flatten()
                 .sum::<i64>()
         });
         assert_eq!(sum, (0..1000000i64).sum::<i64>());
