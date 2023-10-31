@@ -26,3 +26,4 @@ libduckdb-sys = { workspace = true }
 serde = { workspace = true }
 arrow = { workspace = true, features = ["ffi"] }
 chrono = { workspace = true }
+bigdecimal = "0.4.2"

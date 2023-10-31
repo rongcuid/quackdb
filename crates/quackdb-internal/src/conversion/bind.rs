@@ -3,6 +3,7 @@ use std::ffi::CStr;
 use super::IntoDuckDb;
 use crate::ffi;
 
+use bigdecimal::BigDecimal;
 use chrono::prelude::*;
 use paste::paste;
 
@@ -109,6 +110,28 @@ impl_bind_param_for_primitive! {f64, double}
 impl_bind_param! {NaiveDate, date}
 impl_bind_param! {NaiveTime, time}
 impl_bind_param! {NaiveDateTime, timestamp}
+
+unsafe impl BindParam for BigDecimal {
+    unsafe fn bind_param_unchecked(
+        self,
+        stmt: ffi::duckdb_prepared_statement,
+        param_idx: u64,
+    ) -> Result<(), &'static str> {
+        let width = self.digits() as u8;
+        let (n, e) = self.into_bigint_and_exponent();
+        let n: i128 = n.try_into().map_err(|_| "BigDecimal wider than i128")?;
+        let decimal = ffi::duckdb_decimal {
+            width,
+            scale: e as u8,
+            value: n.into_duckdb(),
+        };
+        match ffi::duckdb_bind_decimal(stmt, param_idx, decimal) {
+            ffi::DuckDBSuccess => Ok(()),
+            ffi::DuckDBError => Err("duckdb_bind_decimal()"),
+            _ => unreachable!(),
+        }
+    }
+}
 
 unsafe impl BindParam for &CStr {
     unsafe fn bind_param_unchecked(
