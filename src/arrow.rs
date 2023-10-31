@@ -58,7 +58,11 @@ impl ArrowResult {
             get_next: Some(get_next),
             get_last_error: Some(get_last_error),
             release: Some(release),
-            private_data: Box::into_raw(Box::new(self)).cast(),
+            private_data: Box::into_raw(Box::new(StreamData {
+                result: self,
+                duckdb_error: false,
+            }))
+            .cast(),
         };
         Ok(ArrowArrayStreamReader::try_new(stream)?)
     }
@@ -72,13 +76,18 @@ impl Deref for ArrowResult {
     }
 }
 
+struct StreamData {
+    result: ArrowResult,
+    duckdb_error: bool,
+}
+
 unsafe extern "C" fn get_schema(
     stream: *mut FFI_ArrowArrayStream,
     out: *mut FFI_ArrowSchema,
 ) -> i32 {
     assert!(out != ptr::null_mut());
-    let result: *const ArrowResult = (*stream).private_data.cast();
-    let res = **result;
+    let stream_data: *const StreamData = (*stream).private_data.cast();
+    let res = *(*stream_data).result;
     let mut out_schema = FFI_ArrowSchema::empty();
     if ffi::duckdb_query_arrow_schema(
         res,
@@ -93,14 +102,15 @@ unsafe extern "C" fn get_schema(
 }
 
 unsafe extern "C" fn get_next(stream: *mut FFI_ArrowArrayStream, out: *mut FFI_ArrowArray) -> i32 {
-    let result: *const ArrowResult = (*stream).private_data.cast();
-    let res = **result;
+    let stream_data: *mut StreamData = (*stream).private_data.cast();
+    let res = *(*stream_data).result;
     let mut out_array = FFI_ArrowArray::empty();
     if ffi::duckdb_query_arrow_array(
         res,
         &mut std::ptr::addr_of_mut!(out_array) as *mut _ as *mut ffi::duckdb_arrow_array,
     ) != ffi::DuckDBSuccess
     {
+        (*stream_data).duckdb_error = true;
         libc::EIO
     } else {
         *out = out_array;
@@ -109,16 +119,17 @@ unsafe extern "C" fn get_next(stream: *mut FFI_ArrowArrayStream, out: *mut FFI_A
 }
 
 unsafe extern "C" fn get_last_error(stream: *mut FFI_ArrowArrayStream) -> *const c_char {
-    let result: *const ArrowResult = (*stream).private_data.cast();
-    let res = **result;
-    let ptr = ffi::duckdb_query_arrow_error(res);
-    if ptr == ptr::null() {
-        cstr!("ArrowArrayStream->get_last_error returned NULL").as_ptr()
-    } else {
+    let stream_data: *const StreamData = (*stream).private_data.cast();
+    let res = *(*stream_data).result;
+    if (*stream_data).duckdb_error {
+        let ptr = ffi::duckdb_query_arrow_error(res);
+        assert!(ptr != ptr::null());
         ptr
+    } else {
+        cstr!("unknown error occured").as_ptr()
     }
 }
 
 unsafe extern "C" fn release(stream: *mut FFI_ArrowArrayStream) {
-    drop::<Box<ArrowResult>>(Box::from_raw((*stream).private_data.cast()))
+    drop::<Box<StreamData>>(Box::from_raw((*stream).private_data.cast()))
 }

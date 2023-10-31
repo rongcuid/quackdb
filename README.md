@@ -50,9 +50,10 @@ Raw FFI handles can be accessed by dereferencing either high level or wrapper st
 ## Roadmap
 
 * [ ] Prelude module
-* [ ] Precise error checking in arrow streaming interface
+* [ ] Unify replacement scan and table function
+* [x] Precise error checking in arrow streaming interface
 * [ ] Registering arrow data
-* [ ] Rare interface (CStr, Arrow FFI, etc)
+* [ ] Medium-rare interface (CStr, Arrow FFI, etc)
 * [ ] Extracted statements
 * [ ] Decimal type
 * [ ] Clean up receivers
