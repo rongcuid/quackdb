@@ -9,7 +9,7 @@ use std::{
 
 use quackdb_internal::{
     ffi,
-    handles::{ConnectionHandle, DatabaseHandle, ReplacementScanInfoHandle},
+    handles::{ConnectionHandle, DatabaseHandle},
 };
 
 use crate::{config::Config, connection::Connection, replacement_scan::ReplacementScanInfo};
@@ -95,8 +95,7 @@ impl Database {
             F: Fn(&ReplacementScanInfo, String, &D) -> Result<(), E>,
         {
             let data: *const ExtraData<F, D> = data.cast();
-            let info: ReplacementScanInfo =
-                unsafe { ReplacementScanInfoHandle::from_raw(info) }.into();
+            let info: ReplacementScanInfo = info.into();
             let table_name = unsafe { CStr::from_ptr(table_name) }
                 .to_string_lossy()
                 .into_owned();

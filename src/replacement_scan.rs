@@ -1,11 +1,11 @@
 use std::{ffi::CString, ops::Deref};
 
-use quackdb_internal::{ffi, handles::ReplacementScanInfoHandle};
+use quackdb_internal::ffi;
 use thiserror::Error;
 
 #[derive(Debug)]
 pub struct ReplacementScanInfo {
-    handle: ReplacementScanInfoHandle,
+    handle: ffi::duckdb_replacement_scan_info,
 }
 
 #[derive(Error, Debug)]
@@ -16,8 +16,8 @@ pub enum ReplacementScanError {
     ErrorMessage(String),
 }
 
-impl From<ReplacementScanInfoHandle> for ReplacementScanInfo {
-    fn from(value: ReplacementScanInfoHandle) -> Self {
+impl From<ffi::duckdb_replacement_scan_info> for ReplacementScanInfo {
+    fn from(value: ffi::duckdb_replacement_scan_info) -> Self {
         Self { handle: value }
     }
 }
