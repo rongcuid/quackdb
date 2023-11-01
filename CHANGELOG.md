@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `error()` functions are now unsafe
 
 ### Removed
+- Replacement scan handles
+
+### Removed
 - Cleaned up unused code
 - Removed some basic tests
 

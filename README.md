@@ -59,6 +59,7 @@ Raw FFI handles can be accessed by dereferencing either high level or wrapper st
 * [ ] Extracted statements
 * [ ] Clean up receivers
 * [ ] Clean up table function
+* [ ] Clean up panics
 * [ ] Remove intermediate handles that does not need `Drop` implementations
 * [ ] Serde support
 * [ ] Data chunk support
