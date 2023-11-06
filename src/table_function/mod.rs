@@ -8,7 +8,7 @@ use std::{
 
 use quackdb_internal::{
     ffi,
-    handles::{BindInfoHandle, FunctionInfoHandle, InitInfoHandle, TableFunctionHandle},
+    handles::{FunctionInfoHandle, TableFunctionHandle},
 };
 use thiserror::Error;
 
@@ -141,22 +141,21 @@ where
     E: Send + Sync,
 {
     unsafe {
-        let handle = BindInfo::from(BindInfoHandle::from_raw(info));
-        let extra: *const ExtraInfo<B, I, LI, E> = handle.handle.get_extra_info().cast();
+        let extra: *const ExtraInfo<B, I, LI, E> = ffi::duckdb_bind_get_extra_info(info).cast();
         let f = &(*extra).bind;
-        let result = f(&handle, &(*extra).extra);
+        let result = f(&BindInfo::from(info), &(*extra).extra);
         match result {
             Ok(b) => {
                 let b = Box::new(b);
-                handle
-                    .handle
-                    .set_bind_data(Box::into_raw(b).cast(), Some(destroy_box::<B>));
+                ffi::duckdb_bind_set_bind_data(
+                    info,
+                    Box::into_raw(b).cast(),
+                    Some(destroy_box::<B>),
+                );
             }
             Err(e) => {
-                let err = e.replace('\0', r"\0");
-                handle
-                    .handle
-                    .set_error(&CString::new(err).expect("null character"));
+                let err = CString::new(e.replace('\0', r"\0")).expect("null character");
+                ffi::duckdb_bind_set_error(info, err.as_ptr());
             }
         }
     }
@@ -170,23 +169,22 @@ where
     E: Send + Sync,
 {
     unsafe {
-        let handle = InitInfo::from(InitInfoHandle::from_raw(info));
-        let extra: *const ExtraInfo<B, I, LI, E> = handle.handle.get_extra_info().cast();
+        let extra: *const ExtraInfo<B, I, LI, E> = ffi::duckdb_init_get_extra_info(info).cast();
         let f = &(*extra).init;
-        let bind: *const B = handle.handle.get_bind_data().cast();
-        let result = f(&handle, &*bind, &(*extra).extra);
+        let bind: *const B = ffi::duckdb_init_get_bind_data(info).cast();
+        let result = f(&InitInfo::from(info), &*bind, &(*extra).extra);
         match result {
             Ok(i) => {
                 let b = Box::new(i);
-                handle
-                    .handle
-                    .set_init_data(Box::into_raw(b).cast(), Some(destroy_box::<B>));
+                ffi::duckdb_init_set_init_data(
+                    info,
+                    Box::into_raw(b).cast(),
+                    Some(destroy_box::<B>),
+                );
             }
             Err(e) => {
-                let err = e.replace('\0', r"\0");
-                handle
-                    .handle
-                    .set_error(&CString::new(err).expect("null character"));
+                let err = CString::new(e.replace('\0', r"\0")).expect("null character");
+                ffi::duckdb_init_set_error(info, err.as_ptr());
             }
         }
     }
@@ -200,23 +198,22 @@ where
     E: Send + Sync,
 {
     unsafe {
-        let handle = InitInfo::from(InitInfoHandle::from_raw(info));
-        let extra: *const ExtraInfo<B, I, LI, E> = handle.handle.get_extra_info().cast();
+        let extra: *const ExtraInfo<B, I, LI, E> = ffi::duckdb_init_get_extra_info(info).cast();
         if let Some(f) = &(*extra).local_init {
-            let bind: *const B = handle.handle.get_bind_data().cast();
-            let result = f(&handle, &*bind, &(*extra).extra);
+            let bind: *const B = ffi::duckdb_init_get_bind_data(info).cast();
+            let result = f(&InitInfo::from(info), &*bind, &(*extra).extra);
             match result {
                 Ok(i) => {
                     let b = Box::new(i);
-                    handle
-                        .handle
-                        .set_init_data(Box::into_raw(b).cast(), Some(destroy_box::<B>));
+                    ffi::duckdb_init_set_init_data(
+                        info,
+                        Box::into_raw(b).cast(),
+                        Some(destroy_box::<B>),
+                    );
                 }
                 Err(e) => {
-                    let err = e.replace('\0', r"\0");
-                    handle
-                        .handle
-                        .set_error(&CString::new(err).expect("null character"));
+                    let err = CString::new(e.replace('\0', r"\0")).expect("null character");
+                    ffi::duckdb_init_set_error(info, err.as_ptr());
                 }
             }
         }
