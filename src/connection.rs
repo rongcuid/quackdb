@@ -4,14 +4,17 @@ use std::{
     sync::Arc,
 };
 
+use libc::c_void;
 use quackdb_internal::{
     ffi,
     handles::{AppenderHandle, ArrowResultHandle, ConnectionHandle, PreparedStatementHandle},
 };
 
 use crate::{
-    appender::Appender, arrow::ArrowResult, statement::PreparedStatement,
-    table_function::TableFunction,
+    appender::Appender,
+    arrow::ArrowResult,
+    statement::PreparedStatement,
+    table_function::{BindInfo, ExtraInfo, FunctionInfo, InitInfo},
 };
 
 #[derive(Debug)]
@@ -33,8 +36,6 @@ pub enum ConnectionError {
     PrepareError(String),
     #[error("appender error: {0}")]
     AppenderError(String),
-    #[error("register table function error")]
-    RegisterTableFunctionError,
 }
 
 impl From<Arc<ConnectionHandle>> for Connection {
@@ -105,6 +106,195 @@ impl Connection {
             }
         }
     }
+
+    pub fn register_table_function<B, I, LI, D, E, BindFn, InitFn, LocalInitFn, MainFn>(
+        &self,
+        bind: BindFn,
+        init: InitFn,
+        local_init: Option<LocalInitFn>,
+        function: impl Fn(&FunctionInfo, ffi::duckdb_data_chunk, &B, &I, &LI, &D) -> Result<(), E>
+            + Send
+            + Sync,
+        projection: bool,
+        extra_data: D,
+    ) -> Result<(), ()>
+    where
+        B: Send + Sync,
+        I: Send + Sync,
+        LI: Send + Sync,
+        D: Send + Sync,
+        E: std::error::Error + Send,
+        BindFn: Fn(&BindInfo, &D) -> Result<B, E> + Send + 'static,
+        InitFn: Fn(&InitInfo, &B, &D) -> Result<I, E> + Send,
+        LocalInitFn: Fn(&InitInfo, &B, &D) -> Result<LI, E> + Send + Sync,
+    {
+        unsafe {
+            let table_function = ffi::duckdb_create_table_function();
+            ffi::duckdb_table_function_supports_projection_pushdown(table_function, projection);
+            // Register callbacks
+            ffi::duckdb_table_function_set_bind(table_function, Some(bind_fn::<B, I, LI, D, E>));
+            ffi::duckdb_table_function_set_init(table_function, Some(init_fn::<B, I, LI, D, E>));
+            if local_init.is_some() {
+                ffi::duckdb_table_function_set_local_init(
+                    table_function,
+                    Some(local_init_fn::<B, I, LI, D, E>),
+                );
+            }
+            ffi::duckdb_table_function_set_function(
+                table_function,
+                Some(main_fn::<B, I, LI, D, E>),
+            );
+            // Store extra info
+            let extra = Box::new(ExtraInfo {
+                bind: Box::new(bind),
+                init: Box::new(init),
+                local_init: local_init.map(
+                    |f| -> Box<dyn Fn(&InitInfo, &B, &D) -> Result<LI, E> + Send + Sync> {
+                        Box::new(f)
+                    },
+                ),
+                function: Box::new(function),
+                extra: extra_data,
+            });
+            ffi::duckdb_table_function_set_extra_info(
+                table_function,
+                Box::into_raw(extra).cast(),
+                Some(destroy_extra_info::<B, I, LI, D, E>),
+            );
+            Ok(())
+        }
+    }
+}
+
+extern "C" fn bind_fn<B, I, LI, D, E>(info: ffi::duckdb_bind_info)
+where
+    B: Send + Sync,
+    I: Send + Sync,
+    LI: Send + Sync,
+    D: Send + Sync,
+    E: std::error::Error + Send,
+{
+    unsafe {
+        let extra: *const ExtraInfo<B, I, LI, E, E> = ffi::duckdb_bind_get_extra_info(info).cast();
+        let f = &(*extra).bind;
+        let result = f(&BindInfo::from(info), &(*extra).extra);
+        match result {
+            Ok(b) => {
+                let b = Box::new(b);
+                ffi::duckdb_bind_set_bind_data(
+                    info,
+                    Box::into_raw(b).cast(),
+                    Some(destroy_box::<B>),
+                );
+            }
+            Err(e) => {
+                let err = CString::new(e.to_string().replace('\0', r"\0")).expect("null character");
+                ffi::duckdb_bind_set_error(info, err.as_ptr());
+            }
+        }
+    }
+}
+
+extern "C" fn init_fn<B, I, LI, D, E>(info: ffi::duckdb_init_info)
+where
+    B: Send + Sync,
+    I: Send + Sync,
+    LI: Send + Sync,
+    D: Send + Sync,
+    E: std::error::Error + Send,
+{
+    unsafe {
+        let extra: *const ExtraInfo<B, I, LI, D, E> = ffi::duckdb_init_get_extra_info(info).cast();
+        let f = &(*extra).init;
+        let bind: *const B = ffi::duckdb_init_get_bind_data(info).cast();
+        let result = f(&InitInfo::from(info), &*bind, &(*extra).extra);
+        match result {
+            Ok(i) => {
+                let b = Box::new(i);
+                ffi::duckdb_init_set_init_data(
+                    info,
+                    Box::into_raw(b).cast(),
+                    Some(destroy_box::<B>),
+                );
+            }
+            Err(e) => {
+                let err = CString::new(e.to_string().replace('\0', r"\0")).expect("null character");
+                ffi::duckdb_init_set_error(info, err.as_ptr());
+            }
+        }
+    }
+}
+
+extern "C" fn local_init_fn<B, I, LI, D, E>(info: ffi::duckdb_init_info)
+where
+    B: Send + Sync,
+    I: Send + Sync,
+    LI: Send + Sync,
+    D: Send + Sync,
+    E: std::error::Error + Send,
+{
+    unsafe {
+        let extra: *const ExtraInfo<B, I, LI, D, E> = ffi::duckdb_init_get_extra_info(info).cast();
+        if let Some(f) = &(*extra).local_init {
+            let bind: *const B = ffi::duckdb_init_get_bind_data(info).cast();
+            let result = f(&InitInfo::from(info), &*bind, &(*extra).extra);
+            match result {
+                Ok(i) => {
+                    let b = Box::new(i);
+                    ffi::duckdb_init_set_init_data(
+                        info,
+                        Box::into_raw(b).cast(),
+                        Some(destroy_box::<B>),
+                    );
+                }
+                Err(e) => {
+                    let err =
+                        CString::new(e.to_string().replace('\0', r"\0")).expect("null character");
+                    ffi::duckdb_init_set_error(info, err.as_ptr());
+                }
+            }
+        }
+    }
+}
+
+extern "C" fn main_fn<B, I, LI, D, E>(
+    info: ffi::duckdb_function_info,
+    data_chunk: ffi::duckdb_data_chunk,
+) where
+    B: Send + Sync,
+    I: Send + Sync,
+    LI: Send + Sync,
+    D: Send + Sync,
+    E: std::error::Error + Send,
+{
+    unsafe {
+        let extra: *const ExtraInfo<B, I, LI, D, E> =
+            ffi::duckdb_function_get_extra_info(info).cast();
+        let f = &(*extra).function;
+        let bind: *const B = ffi::duckdb_function_get_bind_data(info).cast();
+        let init: *const I = ffi::duckdb_function_get_init_data(info).cast();
+        let local_init: *const LI = ffi::duckdb_function_get_local_init_data(info).cast();
+        let result = f(
+            &FunctionInfo::from(info),
+            data_chunk,
+            &*bind,
+            &*init,
+            &*local_init,
+            &(*extra).extra,
+        );
+        if let Err(e) = result {
+            let err = CString::new(e.to_string().replace('\0', r"\0")).expect("null character");
+            ffi::duckdb_function_set_error(info, err.as_ptr());
+        }
+    }
+}
+
+extern "C" fn destroy_extra_info<B, I, LI, D, E>(ptr: *mut c_void) {
+    destroy_box::<ExtraInfo<B, I, LI, D, E>>(ptr)
+}
+
+extern "C" fn destroy_box<T>(ptr: *mut c_void) {
+    unsafe { drop::<Box<T>>(Box::from_raw(ptr.cast())) }
 }
 
 impl Deref for Connection {
