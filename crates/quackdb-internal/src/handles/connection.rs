@@ -1,7 +1,4 @@
-use std::{
-    ops::Deref,
-    sync::{Arc, Mutex},
-};
+use std::{ops::Deref, sync::Arc};
 
 use crate::ffi;
 

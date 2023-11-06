@@ -13,16 +13,16 @@ fn i128_to_hugeint(value: i128) -> ffi::duckdb_hugeint {
 
 macro_rules! impl_to_duckdb_for_primitive {
     ($ty:ty, $type_id:expr) => {
-        impl ToDuckDbType for $ty {
+        unsafe impl ToDuckDbType for $ty {
             type DuckDbRepresentation = $ty;
             const DUCKDB_TYPE_ID: TypeId = $type_id;
         }
-        impl IntoDuckDb for $ty {
+        unsafe impl IntoDuckDb for $ty {
             fn into_duckdb(self) -> Self::DuckDbRepresentation {
                 self
             }
         }
-        impl FromDuckDb for $ty {
+        unsafe impl FromDuckDb for $ty {
             fn from_duckdb(value: Self::DuckDbRepresentation) -> Self {
                 value
             }
@@ -42,33 +42,33 @@ impl_to_duckdb_for_primitive! { u64, TypeId::UBigInt }
 impl_to_duckdb_for_primitive! { f32, TypeId::Float }
 impl_to_duckdb_for_primitive! { f64, TypeId::Double }
 
-impl ToDuckDbType for i128 {
+unsafe impl ToDuckDbType for i128 {
     const DUCKDB_TYPE_ID: TypeId = TypeId::HugeInt;
 
     type DuckDbRepresentation = ffi::duckdb_hugeint;
 }
-impl IntoDuckDb for i128 {
+unsafe impl IntoDuckDb for i128 {
     fn into_duckdb(self) -> Self::DuckDbRepresentation {
         i128_to_hugeint(self)
     }
 }
-impl FromDuckDb for i128 {
+unsafe impl FromDuckDb for i128 {
     fn from_duckdb(value: Self::DuckDbRepresentation) -> Self {
         (value.upper as i128) << 64 & value.lower as i128
     }
 }
 
-impl ToDuckDbType for &CStr {
+unsafe impl ToDuckDbType for &CStr {
     const DUCKDB_TYPE_ID: TypeId = TypeId::VarChar;
 
     type DuckDbRepresentation = *const c_char;
 }
-impl IntoDuckDb for &CStr {
+unsafe impl IntoDuckDb for &CStr {
     fn into_duckdb(self) -> Self::DuckDbRepresentation {
         self.as_ptr()
     }
 }
-impl FromDuckDb for &CStr {
+unsafe impl FromDuckDb for &CStr {
     fn from_duckdb(value: Self::DuckDbRepresentation) -> Self {
         unsafe { CStr::from_ptr(value) }
     }

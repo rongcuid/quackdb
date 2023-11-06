@@ -6,7 +6,7 @@ use crate::{handles::LogicalTypeHandle, type_id::TypeId};
 pub use chrono::*;
 
 /// Rust primitive types to duckdb types
-pub trait ToDuckDbType {
+pub unsafe trait ToDuckDbType {
     const DUCKDB_TYPE_ID: TypeId;
     /// Representation to interface with DuckDb
     type DuckDbRepresentation;
@@ -16,7 +16,7 @@ pub trait ToDuckDbType {
     }
 }
 
-pub trait IntoDuckDb
+pub unsafe trait IntoDuckDb
 where
     Self: ToDuckDbType,
 {
@@ -25,7 +25,7 @@ where
     /// If unrepresentable
     fn into_duckdb(self) -> Self::DuckDbRepresentation;
 }
-pub trait FromDuckDb
+pub unsafe trait FromDuckDb
 where
     Self: ToDuckDbType,
 {
