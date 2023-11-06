@@ -105,14 +105,6 @@ impl Connection {
             }
         }
     }
-    pub fn register_table_function(
-        &mut self,
-        function: &TableFunction,
-    ) -> Result<(), ConnectionError> {
-        self.handle
-            .register_table_function(function.handle.clone())
-            .map_err(|_| ConnectionError::RegisterTableFunctionError)
-    }
 }
 
 impl Deref for Connection {

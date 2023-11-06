@@ -6,11 +6,11 @@ use std::{
     sync::Arc,
 };
 
-use quackdb_internal::{ffi, handles::TableFunctionHandle};
+use quackdb_internal::ffi;
 use thiserror::Error;
 
 pub struct TableFunction {
-    pub handle: Arc<TableFunctionHandle>,
+    pub handle: Arc<ffi::duckdb_table_function>,
 }
 
 type BindFn<B, E> = Box<dyn Fn(&BindInfo, &E) -> Result<B, String> + Send>;
@@ -102,31 +102,39 @@ where
     }
     pub fn build(self) -> Result<TableFunction, TableFunctionBuilderError> {
         use TableFunctionBuilderError::*;
-        let handle = TableFunctionHandle::create();
-        handle.supports_projection_pushdown(self.projection);
-        let extra = Box::new(ExtraInfo {
-            bind: self.bind.ok_or(MissingBind)?,
-            init: self.init.ok_or(MissingInit)?,
-            local_init: self.local_init,
-            function: self.function.ok_or(MissingMain)?,
-            extra: self.extra,
-        });
-
         unsafe {
+            let table_function = ffi::duckdb_create_table_function();
+            ffi::duckdb_table_function_supports_projection_pushdown(
+                table_function,
+                self.projection,
+            );
+            let extra = Box::new(ExtraInfo {
+                bind: self.bind.ok_or(MissingBind)?,
+                init: self.init.ok_or(MissingInit)?,
+                local_init: self.local_init,
+                function: self.function.ok_or(MissingMain)?,
+                extra: self.extra,
+            });
             // Register callbacks
-            handle.set_bind(Some(bind::<B, I, LI, E>));
-            handle.set_init(Some(init::<B, I, LI, E>));
+            ffi::duckdb_table_function_set_bind(table_function, Some(bind::<B, I, LI, E>));
+            ffi::duckdb_table_function_set_init(table_function, Some(init::<B, I, LI, E>));
             if extra.local_init.is_some() {
-                handle.set_local_init(Some(local_init::<B, I, LI, E>));
+                ffi::duckdb_table_function_set_local_init(
+                    table_function,
+                    Some(local_init::<B, I, LI, E>),
+                );
             }
-            handle.set_function(Some(function::<B, I, LI, E>));
+            ffi::duckdb_table_function_set_function(table_function, Some(function::<B, I, LI, E>));
             // Store extra info
-            handle.set_extra_info(
+            ffi::duckdb_table_function_set_extra_info(
+                table_function,
                 Box::into_raw(extra).cast(),
                 Some(destroy_extra_info::<B, I, LI, E>),
-            )
-        };
-        Ok(TableFunction { handle })
+            );
+            Ok(TableFunction {
+                handle: Arc::new(table_function),
+            })
+        }
     }
 }
 

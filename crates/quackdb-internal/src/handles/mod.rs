@@ -12,5 +12,3 @@ mod statement;
 pub use statement::*;
 mod logical_type;
 pub use logical_type::*;
-mod table_function;
-pub use table_function::*;
