@@ -51,7 +51,7 @@ Raw FFI handles can be accessed by dereferencing either high level or wrapper st
 
 * [x] Precise error checking in arrow streaming interface
 * [x] Decimal type (bigdecimal)
-* [ ] Clean up handlers
+* [x] Clean up handlers
 * [ ] Unify replacement scan and table function
 * [ ] Registering arrow data
 * [ ] Clean up table function
