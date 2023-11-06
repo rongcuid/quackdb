@@ -6,10 +6,7 @@ use std::{
     sync::Arc,
 };
 
-use quackdb_internal::{
-    ffi,
-    handles::{FunctionInfoHandle, TableFunctionHandle},
-};
+use quackdb_internal::{ffi, handles::TableFunctionHandle};
 use thiserror::Error;
 
 pub struct TableFunction {
@@ -230,14 +227,13 @@ extern "C" fn function<B, I, LI, E>(
     E: Send + Sync,
 {
     unsafe {
-        let handle = FunctionInfo::from(FunctionInfoHandle::from_raw(info));
-        let extra: *const ExtraInfo<B, I, LI, E> = handle.handle.get_extra_info().cast();
+        let extra: *const ExtraInfo<B, I, LI, E> = ffi::duckdb_function_get_extra_info(info).cast();
         let f = &(*extra).function;
-        let bind: *const B = handle.handle.get_bind_data().cast();
-        let init: *const I = handle.handle.get_init_data().cast();
-        let local_init: *const LI = handle.handle.get_local_init_data().cast();
+        let bind: *const B = ffi::duckdb_function_get_bind_data(info).cast();
+        let init: *const I = ffi::duckdb_function_get_init_data(info).cast();
+        let local_init: *const LI = ffi::duckdb_function_get_local_init_data(info).cast();
         let result = f(
-            &handle,
+            &FunctionInfo::from(info),
             data_chunk,
             &*bind,
             &*init,
@@ -245,12 +241,9 @@ extern "C" fn function<B, I, LI, E>(
             &(*extra).extra,
         );
         if let Err(e) = result {
-            let err = e.replace('\0', r"\0");
-            handle
-                .handle
-                .set_error(&CString::new(err).expect("null character"));
+            let err = CString::new(e.replace('\0', r"\0")).expect("null character");
+            ffi::duckdb_function_set_error(info, err.as_ptr());
         }
-        todo!()
     }
 }
 

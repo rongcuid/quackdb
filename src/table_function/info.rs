@@ -1,6 +1,6 @@
 use std::{ffi::CStr, ops::Deref};
 
-use quackdb_internal::{ffi, handles::FunctionInfoHandle};
+use quackdb_internal::ffi;
 
 use crate::types::LogicalType;
 
@@ -77,11 +77,19 @@ impl Deref for InitInfo {
 }
 
 pub struct FunctionInfo {
-    pub handle: FunctionInfoHandle,
+    pub handle: ffi::duckdb_function_info,
 }
 
-impl From<FunctionInfoHandle> for FunctionInfo {
-    fn from(handle: FunctionInfoHandle) -> Self {
+impl From<ffi::duckdb_function_info> for FunctionInfo {
+    fn from(handle: ffi::duckdb_function_info) -> Self {
         Self { handle }
+    }
+}
+
+impl Deref for FunctionInfo {
+    type Target = ffi::duckdb_function_info;
+
+    fn deref(&self) -> &Self::Target {
+        &self.handle
     }
 }
