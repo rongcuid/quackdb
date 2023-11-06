@@ -9,11 +9,11 @@ pub struct ReplacementScanInfo {
 }
 
 #[derive(Error, Debug)]
-pub enum ReplacementScanError {
+pub enum ReplacementScanError<E> {
     #[error("bad function name: {0}")]
     BadFunctionName(String),
-    #[error("{0}")]
-    ErrorMessage(String),
+    #[error(transparent)]
+    UserError(#[from] E),
 }
 
 impl From<ffi::duckdb_replacement_scan_info> for ReplacementScanInfo {
@@ -23,7 +23,7 @@ impl From<ffi::duckdb_replacement_scan_info> for ReplacementScanInfo {
 }
 
 impl ReplacementScanInfo {
-    pub fn set_function_name(&self, function_name: &str) -> Result<(), ReplacementScanError> {
+    pub fn set_function_name<E>(&self, function_name: &str) -> Result<(), ReplacementScanError<E>> {
         let cstr = CString::new(function_name)
             .map_err(|_| ReplacementScanError::BadFunctionName(function_name.to_owned()))?;
         unsafe { ffi::duckdb_replacement_scan_set_function_name(**self, cstr.as_ptr()) }

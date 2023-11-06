@@ -12,7 +12,11 @@ use quackdb_internal::{
     handles::{ConnectionHandle, DatabaseHandle},
 };
 
-use crate::{config::Config, connection::Connection, replacement_scan::ReplacementScanInfo};
+use crate::{
+    config::Config,
+    connection::Connection,
+    replacement_scan::{ReplacementScanError, ReplacementScanInfo},
+};
 
 #[derive(Debug)]
 pub struct Database {
@@ -81,7 +85,7 @@ impl Database {
     pub fn add_replacement_scan<F, D, E>(&self, replacement: F, extra: D)
     where
         E: std::error::Error,
-        F: Fn(&ReplacementScanInfo, String, &D) -> Result<(), E>,
+        F: Fn(&ReplacementScanInfo, String, &D) -> Result<(), ReplacementScanError<E>>,
     {
         struct ExtraData<F, D> {
             replacement: F,
@@ -92,7 +96,7 @@ impl Database {
             table_name: *const c_char,
             data: *mut c_void,
         ) where
-            F: Fn(&ReplacementScanInfo, String, &D) -> Result<(), E>,
+            F: Fn(&ReplacementScanInfo, String, &D) -> Result<(), ReplacementScanError<E>>,
         {
             let data: *const ExtraData<F, D> = data.cast();
             let info: ReplacementScanInfo = info.into();
