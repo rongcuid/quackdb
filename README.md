@@ -47,20 +47,24 @@ Raw FFI handles can be accessed by dereferencing either high level or wrapper st
 * Low level API use Rust types
 * Low level API follow DuckDB naming
 
-## Roadmap
+## Roadmap 0.6
 
 * [x] Precise error checking in arrow streaming interface
 * [x] Decimal type (bigdecimal)
 * [ ] Clean up handlers
-* [ ] Medium-rare interface (CStr, Arrow FFI, etc)
-* [ ] Prelude module
 * [ ] Unify replacement scan and table function
 * [ ] Registering arrow data
+* [ ] Clean up table function
+* [ ] Remove intermediate handles that does not need `Drop` implementations
+* [ ] Medium-rare interface (CStr, Arrow FFI, etc)
+* [ ] Prelude module
+
+## Roadmap
+
+
 * [ ] Extracted statements
 * [ ] Clean up receivers
-* [ ] Clean up table function
 * [ ] Clean up panics
-* [ ] Remove intermediate handles that does not need `Drop` implementations
 * [ ] Serde support
 * [ ] Data chunk support
 * [ ] Comprehensive documentation
